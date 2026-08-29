@@ -1,4 +1,4 @@
-// FILE: lib/web_live_sync/web_sale_summary_view.dart
+// FILE: lib/web_live_sync/web_purchase_summary_view.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,25 +8,25 @@ import 'web_models.dart';
 import 'pharoah_web_manager.dart';
 import 'web_app_date_logic.dart';
 import 'web_pdf_router_service.dart';
-import 'sub_views/web_billing/web_new_sale_view.dart';
+import 'web_purchase_entry_view.dart';
 
-class WebSaleSummaryView extends StatefulWidget {
+class WebPurchaseSummaryView extends StatefulWidget {
   final VoidCallback onBack;
 
-  const WebSaleSummaryView({super.key, required this.onBack});
+  const WebPurchaseSummaryView({super.key, required this.onBack});
 
   @override
-  State<WebSaleSummaryView> createState() => _WebSaleSummaryViewState();
+  State<WebPurchaseSummaryView> createState() => _WebPurchaseSummaryViewState();
 }
 
-class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
+class _WebPurchaseSummaryViewState extends State<WebPurchaseSummaryView> {
   DateTime fromDate = DateTime.now();
   DateTime toDate = DateTime.now();
   String searchQuery = "";
   bool _isInit = false;
 
   bool isSelectionMode = false;
-  List<String> selectedBillIds = [];
+  List<String> selectedPurchaseIds = [];
   bool isProcessing = false;
   double progressValue = 0.0;
   String progressText = "";
@@ -48,20 +48,20 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
   DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
   Future<void> _handleBatchZipExport(PharoahWebManager webPh) async {
-    if (selectedBillIds.isEmpty) return;
+    if (selectedPurchaseIds.isEmpty) return;
 
     setState(() { 
       isProcessing = true; 
-      progressText = "Preparing Invoices ZIP Bundle..."; 
+      progressText = "Preparing Inward ZIP Bundle..."; 
       progressValue = 0.0;
     });
 
     try {
-      List<Sale> billsToZip = webPh.sales.where((s) => selectedBillIds.contains(s.id)).toList();
+      List<Purchase> purchasesToZip = webPh.purchases.where((p) => selectedPurchaseIds.contains(p.id)).toList();
       final shopProfile = CompanyProfile.fromMap(webPh.companyProfile);
 
       await WebPdfRouterService.downloadBulkZip(
-        documents: billsToZip,
+        documents: purchasesToZip,
         shop: shopProfile,
         config: webPh.appConfig,
         onProgress: (v, n) {
@@ -77,12 +77,12 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
       setState(() { 
         isProcessing = false; 
         isSelectionMode = false; 
-        selectedBillIds.clear(); 
+        selectedPurchaseIds.clear(); 
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Invoice ZIP Bundle exported successfully!"), backgroundColor: Colors.green)
+          const SnackBar(content: Text("✅ Inward ZIP Bundle exported successfully!"), backgroundColor: Colors.green)
         );
       }
     } catch (e) {
@@ -101,32 +101,34 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
     final fDateOnly = _dateOnly(fromDate);
     final tDateOnly = _dateOnly(toDate);
 
-    List<Sale> filteredSales = webPh.sales.reversed.where((s) {
-      final sDateOnly = _dateOnly(s.date);
-      bool dateMatch = !sDateOnly.isBefore(fDateOnly) && !sDateOnly.isAfter(tDateOnly);
+    // Filter Logic
+    List<Purchase> filteredPurchases = webPh.purchases.reversed.where((p) {
+      final pDateOnly = _dateOnly(p.date);
+      bool dateMatch = !pDateOnly.isBefore(fDateOnly) && !pDateOnly.isAfter(tDateOnly);
       bool searchMatch = searchQuery.isEmpty ||
-          s.billNo.toLowerCase().contains(searchQuery.toLowerCase()) || 
-          s.partyName.toLowerCase().contains(searchQuery.toLowerCase());
-      bool isActive = s.status.isEmpty || s.status.toLowerCase() == "active";
+          p.distributorName.toLowerCase().contains(searchQuery.toLowerCase()) || 
+          p.billNo.toLowerCase().contains(searchQuery.toLowerCase()) ||
+          p.internalNo.toLowerCase().contains(searchQuery.toLowerCase());
 
-      return isActive && dateMatch && searchMatch;
+      return dateMatch && searchMatch;
     }).toList();
 
+    // Calculations
     double totalTaxable = 0.0;
-    double totalTax = 0.0;
+    double totalITC = 0.0;
     double netTotal = 0.0;
     double cashTotal = 0.0;
     double creditTotal = 0.0;
 
-    for (var s in filteredSales) {
-      double sTax = s.items.fold(0.0, (sum, it) => sum + (it.cgst + it.sgst + it.igst));
-      totalTax += sTax; 
-      totalTaxable += (s.totalAmount - sTax); 
-      netTotal += s.totalAmount;
-      if (s.paymentMode.toUpperCase() == 'CASH') {
-        cashTotal += s.totalAmount;
+    for (var p in filteredPurchases) {
+      double pTaxable = p.items.fold(0.0, (sum, it) => sum + (it.purchaseRate * it.qty - it.discountRupees));
+      totalTaxable += pTaxable; 
+      totalITC += (p.totalAmount - pTaxable); 
+      netTotal += p.totalAmount;
+      if (p.paymentMode.toUpperCase() == 'CASH') {
+        cashTotal += p.totalAmount;
       } else {
-        creditTotal += s.totalAmount;
+        creditTotal += p.totalAmount;
       }
     }
 
@@ -140,10 +142,12 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeaderBar(webPh, filteredSales, activeShop),
+          // --- 1. TOP HEADER BAR ---
+          _buildHeaderBar(webPh, filteredPurchases, activeShop),
 
           const SizedBox(height: 16),
 
+          // --- 2. FILTER & SEARCH SECTION ---
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -164,9 +168,9 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
                 TextField(
                   style: const TextStyle(color: Colors.white, fontSize: 12.5),
                   decoration: InputDecoration(
-                    hintText: "Search by Bill No (e.g. INV-101) or Party / Customer Name...", 
+                    hintText: "Search by Supplier Name, Bill No or Entry ID (e.g. PUR-1)...", 
                     hintStyle: const TextStyle(color: Colors.white38, fontSize: 11.5),
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFF38BDF8), size: 18),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFFF59E0B), size: 18),
                     suffixIcon: searchQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear_rounded, color: Colors.white54, size: 16),
@@ -186,7 +190,8 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
           
           const SizedBox(height: 16),
 
-          if (filteredSales.isEmpty)
+          // --- 3. INWARD LIST (No-Crash Scroll Compatible) ---
+          if (filteredPurchases.isEmpty)
             Center(
               child: Container(
                 width: double.infinity,
@@ -199,12 +204,12 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.receipt_long_outlined, size: 45, color: Colors.white24),
+                    const Icon(Icons.inventory_2_outlined, size: 45, color: Colors.white24),
                     const SizedBox(height: 12),
                     Text(
-                      webPh.sales.isEmpty 
-                        ? "No invoices recorded yet in this store database."
-                        : "No invoices found between ${DateFormat('dd/MM/yyyy').format(fromDate)} and ${DateFormat('dd/MM/yyyy').format(toDate)}.",
+                      webPh.purchases.isEmpty 
+                        ? "No inward purchase records found in this store database."
+                        : "No purchases found between ${DateFormat('dd/MM/yyyy').format(fromDate)} and ${DateFormat('dd/MM/yyyy').format(toDate)}.",
                       style: const TextStyle(color: Colors.white54, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
@@ -216,12 +221,12 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: filteredSales.length,
+              itemCount: filteredPurchases.length,
               itemBuilder: (c, i) {
-                final s = filteredSales[i];
-                final p = webPh.parties.firstWhere(
-                  (x) => x.name == s.partyName, 
-                  orElse: () => Party(id: "temp", name: s.partyName, gst: s.partyGstin, state: s.partyState, address: s.partyAddress, city: s.partyCity, phone: s.partyPhone, email: s.partyEmail, dl: s.partyDl),
+                final p = filteredPurchases[i];
+                final supplierObj = webPh.parties.firstWhere(
+                  (x) => x.id == p.partyId || x.name == p.distributorName, 
+                  orElse: () => Party(id: "temp", name: p.distributorName, group: "Sundry Creditors"),
                 );
 
                 return Container(
@@ -230,8 +235,8 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
                     color: const Color(0xFF1E293B),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelectionMode && selectedBillIds.contains(s.id) ? const Color(0xFF38BDF8) : Colors.white10,
-                      width: isSelectionMode && selectedBillIds.contains(s.id) ? 1.5 : 1.0,
+                      color: isSelectionMode && selectedPurchaseIds.contains(p.id) ? const Color(0xFFF59E0B) : Colors.white10,
+                      width: isSelectionMode && selectedPurchaseIds.contains(p.id) ? 1.5 : 1.0,
                     ),
                   ),
                   child: ListTile(
@@ -240,27 +245,27 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
                     
                     leading: isSelectionMode 
                       ? Checkbox(
-                          value: selectedBillIds.contains(s.id), 
-                          activeColor: const Color(0xFF38BDF8),
-                          onChanged: (v) => setState(() => v! ? selectedBillIds.add(s.id) : selectedBillIds.remove(s.id)),
+                          value: selectedPurchaseIds.contains(p.id), 
+                          activeColor: const Color(0xFFF59E0B),
+                          onChanged: (v) => setState(() => v! ? selectedPurchaseIds.add(p.id) : selectedPurchaseIds.remove(p.id)),
                         )
                       : Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: const BoxDecoration(
-                            color: Color(0x262563EB),
+                            color: Color(0x26F59E0B),
                             borderRadius: BorderRadius.all(Radius.circular(8)),
                           ),
-                          child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF38BDF8), size: 18),
+                          child: const Icon(Icons.downloading_rounded, color: Color(0xFFF59E0B), size: 18),
                         ),
 
                     title: Row(
                       children: [
-                        Text(s.partyName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+                        Text(p.distributorName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
                         const SizedBox(width: 8),
-                        _badge(s.paymentMode.toUpperCase(), s.paymentMode.toUpperCase() == "CASH" ? Colors.greenAccent : Colors.blueAccent),
+                        _badge(p.paymentMode.toUpperCase(), p.paymentMode.toUpperCase() == "CASH" ? Colors.greenAccent : Colors.orangeAccent),
                       ],
                     ),
-                    subtitle: _buildSubtitleWidget(s),
+                    subtitle: _buildSubtitleWidget(p),
                     
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min, 
@@ -270,43 +275,41 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              "₹${s.totalAmount.toStringAsFixed(2)}",
-                              style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w900, fontSize: 14),
+                              "₹${p.totalAmount.toStringAsFixed(2)}",
+                              style: const TextStyle(color: Color(0xFFFBBF24), fontWeight: FontWeight.w900, fontSize: 14),
                             ),
                             Text(
-                              "${s.items.length} items",
+                              "${p.items.length} items",
                               style: const TextStyle(color: Colors.white38, fontSize: 9.5),
                             ),
                           ],
                         ),
                         const SizedBox(width: 14),
                         
+                        // Action Buttons
                         if (!isSelectionMode) ...[
                           IconButton(
                             icon: const Icon(Icons.print_outlined, color: Color(0xFF38BDF8), size: 18), 
-                            tooltip: "Print Landscape Invoice",
-                            onPressed: () => WebPdfRouterService.printSaleInvoice(sale: s, party: p, shop: activeShop, config: webPh.appConfig),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.download_rounded, color: Colors.greenAccent, size: 18), 
-                            tooltip: "Download PDF File",
-                            onPressed: () => WebPdfRouterService.downloadSalePdf(sale: s, party: p, shop: activeShop, config: webPh.appConfig),
+                            tooltip: "Print Inward Slip",
+                            onPressed: () => WebPdfRouterService.printPurchaseInvoice(purchase: p, party: supplierObj, shop: activeShop),
                           ),
                           IconButton(
                             icon: const Icon(Icons.edit_note_rounded, color: Colors.orangeAccent, size: 20), 
-                            tooltip: "Edit / Modify Bill",
+                            tooltip: "Edit / Modify Inward",
                             onPressed: () {
                               Navigator.push(context, MaterialPageRoute(builder: (ctx) => Scaffold(
                                 backgroundColor: const Color(0xFF0F172A),
-                                body: WebNewSaleView(
+                                body: WebPurchaseEntryView(
                                   onBack: () => Navigator.pop(ctx),
-                                  initialParty: p,
-                                  initialBillNo: s.billNo,
-                                  initialDate: s.date,
-                                  initialMode: s.paymentMode,
-                                  existingItems: s.items,
-                                  linkedChallanIds: s.linkedChallanIds,
-                                  modifySaleId: s.id,
+                                  initialSupplier: supplierObj,
+                                  initialInternalNo: p.internalNo,
+                                  initialBillNo: p.billNo,
+                                  initialDate: p.date,
+                                  initialEntryDate: p.entryDate,
+                                  initialMode: p.paymentMode,
+                                  existingItems: p.items,
+                                  linkedChallanIds: p.linkedChallanIds,
+                                  modifyPurchaseId: p.id,
                                   isReadOnly: false,
                                 ),
                               )));
@@ -314,8 +317,8 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18), 
-                            tooltip: "Delete Bill (Reverse Stock)",
-                            onPressed: () => _confirmDelete(webPh, s),
+                            tooltip: "Delete Purchase (Reverse Stock)",
+                            onPressed: () => _confirmDelete(webPh, p),
                           ),
                         ],
                       ],
@@ -327,6 +330,7 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
           
           const SizedBox(height: 16),
 
+          // --- 4. BOTTOM SUMMARY STRIP ---
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
@@ -336,21 +340,22 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2563EB).withAlpha(100), width: 1.2),
+              border: Border.all(color: const Color(0xFFF59E0B).withAlpha(100), width: 1.2),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween, 
               children: [
-                _botCol("CASH SALES", cashTotal, color: Colors.greenAccent),
-                _botCol("CREDIT SALES", creditTotal, color: Colors.blueAccent),
+                _botCol("CASH INWARD", cashTotal, color: Colors.greenAccent),
+                _botCol("CREDIT INWARD", creditTotal, color: Colors.orangeAccent),
                 _botCol("TAXABLE AMOUNT", totalTaxable, color: Colors.white70), 
-                _botCol("TOTAL OUTPUT GST", totalTax, color: Colors.orangeAccent), 
-                _botCol("NET TURNOVER", netTotal, isNet: true, color: Colors.greenAccent),
+                _botCol("INPUT GST (ITC)", totalITC, color: Colors.greenAccent), 
+                _botCol("TOTAL INWARD", netTotal, isNet: true, color: const Color(0xFFFBBF24)),
               ],
             ),
           ),
 
-          if (isSelectionMode && selectedBillIds.isNotEmpty) ...[
+          // --- 5. BATCH ZIP ACTION BAR ---
+          if (isSelectionMode && selectedPurchaseIds.isNotEmpty) ...[
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -363,7 +368,7 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
                 ),
                 onPressed: () => _handleBatchZipExport(webPh),
                 icon: const Icon(Icons.folder_zip_rounded, size: 18),
-                label: Text("DOWNLOAD ${selectedBillIds.length} SELECTED INVOICES AS ZIP", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+                label: Text("DOWNLOAD ${selectedPurchaseIds.length} SELECTED INWARDS AS ZIP", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
               ),
             ),
           ],
@@ -372,7 +377,7 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
     );
   }
 
-  Widget _buildHeaderBar(PharoahWebManager webPh, List<Sale> filteredSales, CompanyProfile activeShop) {
+  Widget _buildHeaderBar(PharoahWebManager webPh, List<Purchase> filteredPurchases, CompanyProfile activeShop) {
     return Row(
       children: [
         ElevatedButton.icon(
@@ -388,73 +393,73 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
           label: const Text("BACK", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
         ),
         const SizedBox(width: 15),
-        const Icon(Icons.description_outlined, color: Color(0xFF38BDF8), size: 22),
+        const Icon(Icons.history_rounded, color: Color(0xFFF59E0B), size: 22),
         const SizedBox(width: 10),
         const Text(
-          "SALES REGISTER / AUDIT",
+          "PURCHASE REGISTER / AUDIT",
           style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 0.5),
         ),
         const Spacer(),
 
-        if (filteredSales.isNotEmpty) ...[
+        if (filteredPurchases.isNotEmpty) ...[
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0F766E),
+              backgroundColor: const Color(0xFFD97706),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
             label: const Text("PRINT SUMMARY REPORT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
-            onPressed: () => WebPdfRouterService.printSaleReport(sales: filteredSales, shop: activeShop, from: fromDate, to: toDate),
+            onPressed: () => WebPdfRouterService.printPurchaseReport(purchases: filteredPurchases, shop: activeShop, from: fromDate, to: toDate),
           ),
           const SizedBox(width: 8),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1E293B),
-              foregroundColor: Colors.cyanAccent,
+              foregroundColor: const Color(0xFFFBBF24),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: Colors.cyanAccent)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: Color(0xFFFBBF24))),
             ),
             icon: const Icon(Icons.download_rounded, size: 16),
             label: const Text("DOWNLOAD REPORT PDF", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
-            onPressed: () => WebPdfRouterService.downloadSaleReport(sales: filteredSales, shop: activeShop, from: fromDate, to: toDate),
+            onPressed: () => WebPdfRouterService.downloadPurchaseReport(purchases: filteredPurchases, shop: activeShop, from: fromDate, to: toDate),
           ),
           const SizedBox(width: 8),
         ],
 
-        if (filteredSales.isNotEmpty)
+        if (filteredPurchases.isNotEmpty)
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: isSelectionMode ? const Color(0xFFEF4444) : const Color(0xFF2563EB),
-              foregroundColor: Colors.white,
+              backgroundColor: isSelectionMode ? const Color(0xFFEF4444) : const Color(0xFFF59E0B),
+              foregroundColor: isSelectionMode ? Colors.white : Colors.black,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             icon: Icon(isSelectionMode ? Icons.close_rounded : Icons.checklist_rtl_rounded, size: 16),
-            label: Text(isSelectionMode ? "CANCEL" : "SELECT BILLS (ZIP)", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
+            label: Text(isSelectionMode ? "CANCEL" : "SELECT INWARDS (ZIP)", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
             onPressed: () => setState(() { 
               isSelectionMode = !isSelectionMode; 
-              selectedBillIds.clear(); 
+              selectedPurchaseIds.clear(); 
             }),
           ),
       ],
     );
   }
 
-  Widget _buildSubtitleWidget(Sale s) {
+  Widget _buildSubtitleWidget(Purchase p) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 3),
         Row(
           children: [
-            Text("Bill: ${s.billNo} • ${DateFormat('dd/MM/yyyy').format(s.date)}", style: const TextStyle(fontSize: 10.5, color: Colors.white54)),
+            Text("Supplier Bill: ${p.billNo} • ID: ${p.internalNo} • ${WebAppDateLogic.format(p.date)}", style: const TextStyle(fontSize: 10.5, color: Colors.white54)),
             const SizedBox(width: 8),
-            if (s.linkedChallanIds.isNotEmpty)
+            if (p.linkedChallanIds.isNotEmpty)
               _badge("MERGED", Colors.orangeAccent),
-            if (s.sourceTag.isNotEmpty)
-              _badge("IMPORT: ${s.sourceTag}", Colors.lightBlueAccent),
+            if (p.sourceTag.isNotEmpty)
+              _badge("IMPORT: ${p.sourceTag}", Colors.lightBlueAccent),
           ],
         ),
       ],
@@ -503,7 +508,7 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
                 Text(DateFormat('dd/MM/yyyy').format(d), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11.5)),
               ],
             ),
-            const Icon(Icons.calendar_month_rounded, color: Color(0xFF38BDF8), size: 16),
+            const Icon(Icons.calendar_month_rounded, color: Color(0xFFF59E0B), size: 16),
           ],
         ),
       ),
@@ -521,15 +526,15 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
     );
   }
 
-  void _confirmDelete(PharoahWebManager webPh, Sale sale) {
+  void _confirmDelete(PharoahWebManager webPh, Purchase purchase) {
     showDialog(
       context: context,
       builder: (c) => AlertDialog(
         backgroundColor: const Color(0xFF1E293B),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white12)),
-        title: const Text("Delete Invoice?", style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+        title: const Text("Delete Purchase Inward?", style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
         content: Text(
-          "Are you sure you want to delete '${sale.billNo}'?\n\n• Stock will be automatically reversed.\n• Any linked delivery challans will be reverted back to 'Pending'.",
+          "Are you sure you want to delete inward entry '${purchase.internalNo}' (Bill: ${purchase.billNo})?\n\n• Inward stock will be automatically reversed from inventory.\n• Any linked purchase challans will be reverted back to 'Pending'.",
           style: const TextStyle(color: Colors.white70, fontSize: 11.5, height: 1.4),
         ),
         actions: [
@@ -540,20 +545,20 @@ class _WebSaleSummaryViewState extends State<WebSaleSummaryView> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
             onPressed: () { 
-              if (sale.linkedChallanIds.isNotEmpty) {
-                for (var cid in sale.linkedChallanIds) {
-                  int idx = webPh.saleChallans.indexWhere((ch) => ch.id == cid);
+              if (purchase.linkedChallanIds.isNotEmpty) {
+                for (var cid in purchase.linkedChallanIds) {
+                  int idx = webPh.purchaseChallans.indexWhere((ch) => ch.id == cid);
                   if (idx != -1) {
-                    webPh.saleChallans[idx].status = "Pending";
+                    webPh.purchaseChallans[idx].status = "Pending";
                   }
                 }
               }
 
-              webPh.deleteSale(sale.id); 
+              webPh.deletePurchase(purchase.id); 
               Navigator.pop(c); 
 
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("🗑️ Invoice ${sale.billNo} Deleted & Stock Reversed!"), backgroundColor: Colors.redAccent)
+                SnackBar(content: Text("🗑️ Purchase ${purchase.internalNo} Deleted & Stock Reversed!"), backgroundColor: Colors.redAccent)
               );
             }, 
             child: const Text("YES, DELETE", style: TextStyle(fontWeight: FontWeight.bold)),
