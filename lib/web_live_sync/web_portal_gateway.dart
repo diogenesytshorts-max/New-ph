@@ -160,15 +160,7 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
       );
     }
 
-    // 5. CHALLAN TO BILL CONVERTER
-    if (currentView == "GO_STITCHER") {
-      return WebChallanView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-        initialTabIndex: 2,
-      );
-    }
-
-    // 6. RETURNS & REVERSALS (CN / DN / REGISTER)
+    // 5. RETURNS & REVERSALS (CN / DN / REGISTER)
     if (currentView == "GO_CN" || currentView == "GO_DN" || currentView == "GO_BREAKAGE" || currentView == "GO_RET_REG" || currentView == "RETURNS") {
       int tabIdx = 0;
       if (currentView == "GO_DN") tabIdx = 1;
@@ -180,20 +172,39 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
       );
     }
 
-    // 7. DELIVERY & INWARD CHALLANS (5 BUTTON HUB)
-    if (currentView == "GO_CHALLAN_SALE" || currentView == "GO_CHALLAN_PUR" || currentView == "GO_CHALLAN_SALE_REG" || currentView == "GO_CHALLAN_PUR_REG" || currentView == "CHALLANS") {
-      int tabIdx = 0;
-      if (currentView == "GO_CHALLAN_PUR") tabIdx = 1;
-      if (currentView == "GO_CHALLAN_SALE_REG") tabIdx = 3;
-      if (currentView == "GO_CHALLAN_PUR_REG") tabIdx = 4;
-
+    // 6. DELIVERY CHALLANS (ALWAYS OPENS 4-CARD HUB FIRST IF CLICKED FROM MENU)
+    if (currentView == "CHALLANS") {
       return WebChallanView(
         onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-        initialTabIndex: tabIdx,
+        initialTabIndex: -1, // <--- DIRECTLY OPENS 4 BUTTONS HUB!
+      );
+    }
+    if (currentView == "GO_CHALLAN_SALE") {
+      return WebChallanView(
+        onBack: () => _navigateToHub("CHALLANS", "CHALLAN MANAGEMENT"),
+        initialTabIndex: 0,
+      );
+    }
+    if (currentView == "GO_CHALLAN_PUR") {
+      return WebChallanView(
+        onBack: () => _navigateToHub("CHALLANS", "CHALLAN MANAGEMENT"),
+        initialTabIndex: 1,
+      );
+    }
+    if (currentView == "GO_CHALLAN_SALE_REG") {
+      return WebChallanView(
+        onBack: () => _navigateToHub("CHALLANS", "CHALLAN MANAGEMENT"),
+        initialTabIndex: 2,
+      );
+    }
+    if (currentView == "GO_CHALLAN_PUR_REG") {
+      return WebChallanView(
+        onBack: () => _navigateToHub("CHALLANS", "CHALLAN MANAGEMENT"),
+        initialTabIndex: 3,
       );
     }
 
-    // 8. ACCOUNTS, DAYBOOK & VOUCHERS
+    // 7. ACCOUNTS, DAYBOOK & VOUCHERS
     if (currentView == "GO_RECEIPT" || currentView == "GO_PAYMENT" || currentView == "GO_DAYBOOK" || currentView == "GO_LEDGERS" || currentView == "ACCOUNTS") {
       int tabIdx = 0;
       if (currentView == "GO_PAYMENT") tabIdx = 1;
@@ -205,28 +216,28 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
       );
     }
 
-    // 9. PRODUCT / ITEM MASTER
+    // 8. PRODUCT / ITEM MASTER
     if (currentView == "GO_M_ITEM" || currentView == "GO_STOCK" || currentView == "GO_SHORTAGE" || currentView == "INVENTORY") {
       return WebProductMasterView(
         onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
       );
     }
 
-    // 10. PARTY & CUSTOMER MASTER
+    // 9. PARTY & CUSTOMER MASTER
     if (currentView == "GO_M_PARTY") {
       return WebPartyMasterView(
         onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
       );
     }
 
-    // 11. CENTRAL BATCH MASTER
+    // 10. CENTRAL BATCH MASTER
     if (currentView == "GO_M_BATCH") {
       return WebBatchMasterView(
         onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
       );
     }
 
-    // 12. AUXILIARY MASTERS (COMPANIES, SALTS, ROUTES)
+    // 11. AUXILIARY MASTERS (COMPANIES, SALTS, ROUTES)
     if (currentView == "GO_M_COMP" || currentView == "GO_M_SALT" || currentView == "GO_M_ROUTE") {
       int tabIdx = 0;
       if (currentView == "GO_M_SALT") tabIdx = 1;
