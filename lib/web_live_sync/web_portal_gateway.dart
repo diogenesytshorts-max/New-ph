@@ -16,7 +16,7 @@ import 'web_sale_summary_view.dart';
 import 'web_purchase_entry_view.dart';
 import 'web_purchase_summary_view.dart';
 import 'web_returns_view.dart';
-import 'web_challan_view.dart';
+import 'sub_views/web_challans/web_challan_hub.dart'; 
 import 'web_voucher_view.dart';
 import 'web_product_master.dart';
 import 'web_party_master.dart';
@@ -57,7 +57,6 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
         }
       });
     }
-
     _navigateToHub(navKey, actionTitle.toUpperCase());
   }
 
@@ -132,140 +131,62 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
   }
 
   Widget _buildCurrentView(PharoahWebManager webPh) {
-    // 1. SALES BILLING (NEW INVOICE)
     if (currentView == "GO_SALE") {
-      return WebNewSaleView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebNewSaleView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // 2. SALE REGISTER / HISTORY
     if (currentView == "GO_SALE_REG") {
-      return WebSaleSummaryView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebSaleSummaryView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // 3. PURCHASE INWARD ENTRY
     if (currentView == "GO_PURCHASE") {
-      return WebPurchaseEntryView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebPurchaseEntryView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // 4. PURCHASE REGISTER / AUDIT
     if (currentView == "GO_PUR_REG") {
-      return WebPurchaseSummaryView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebPurchaseSummaryView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // 5. RETURNS & REVERSALS (CN / DN / REGISTER)
     if (currentView == "GO_CN" || currentView == "GO_DN" || currentView == "GO_BREAKAGE" || currentView == "GO_RET_REG" || currentView == "RETURNS") {
       int tabIdx = 0;
       if (currentView == "GO_DN") tabIdx = 1;
       if (currentView == "GO_RET_REG") tabIdx = 2;
+      return WebReturnsView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"), initialTabIndex: tabIdx);
+    }
 
-      return WebReturnsView(
+    // --- 🆕 4-BUTTON CHALLAN HUB ROUTING ---
+    if (currentView == "CHALLANS" || currentView == "GO_CHALLAN_SALE" || currentView == "GO_CHALLAN_PUR" || currentView == "GO_CHALLAN_SALE_REG" || currentView == "GO_CHALLAN_PUR_REG" || currentView == "GO_STITCHER") {
+      return WebChallanHub(
         onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-        initialTabIndex: tabIdx,
       );
     }
 
-    // 6. DELIVERY CHALLANS (ALWAYS OPENS 4-CARD HUB FIRST IF CLICKED FROM MENU)
-    if (currentView == "CHALLANS") {
-      return WebChallanView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-        initialTabIndex: -1, // <--- DIRECTLY OPENS 4 BUTTONS HUB!
-      );
-    }
-    if (currentView == "GO_CHALLAN_SALE") {
-      return WebChallanView(
-        onBack: () => _navigateToHub("CHALLANS", "CHALLAN MANAGEMENT"),
-        initialTabIndex: 0,
-      );
-    }
-    if (currentView == "GO_CHALLAN_PUR") {
-      return WebChallanView(
-        onBack: () => _navigateToHub("CHALLANS", "CHALLAN MANAGEMENT"),
-        initialTabIndex: 1,
-      );
-    }
-    if (currentView == "GO_CHALLAN_SALE_REG") {
-      return WebChallanView(
-        onBack: () => _navigateToHub("CHALLANS", "CHALLAN MANAGEMENT"),
-        initialTabIndex: 2,
-      );
-    }
-    if (currentView == "GO_CHALLAN_PUR_REG") {
-      return WebChallanView(
-        onBack: () => _navigateToHub("CHALLANS", "CHALLAN MANAGEMENT"),
-        initialTabIndex: 3,
-      );
-    }
-
-    // 7. ACCOUNTS, DAYBOOK & VOUCHERS
     if (currentView == "GO_RECEIPT" || currentView == "GO_PAYMENT" || currentView == "GO_DAYBOOK" || currentView == "GO_LEDGERS" || currentView == "ACCOUNTS") {
       int tabIdx = 0;
       if (currentView == "GO_PAYMENT") tabIdx = 1;
       if (currentView == "GO_DAYBOOK" || currentView == "GO_LEDGERS") tabIdx = 2;
-
-      return WebVoucherView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-        initialTabIndex: tabIdx,
-      );
+      return WebVoucherView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"), initialTabIndex: tabIdx);
     }
-
-    // 8. PRODUCT / ITEM MASTER
     if (currentView == "GO_M_ITEM" || currentView == "GO_STOCK" || currentView == "GO_SHORTAGE" || currentView == "INVENTORY") {
-      return WebProductMasterView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebProductMasterView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // 9. PARTY & CUSTOMER MASTER
     if (currentView == "GO_M_PARTY") {
-      return WebPartyMasterView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebPartyMasterView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // 10. CENTRAL BATCH MASTER
     if (currentView == "GO_M_BATCH") {
-      return WebBatchMasterView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebBatchMasterView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // 11. AUXILIARY MASTERS (COMPANIES, SALTS, ROUTES)
     if (currentView == "GO_M_COMP" || currentView == "GO_M_SALT" || currentView == "GO_M_ROUTE") {
       int tabIdx = 0;
       if (currentView == "GO_M_SALT") tabIdx = 1;
       if (currentView == "GO_M_ROUTE") tabIdx = 2;
-
-      return WebAuxMastersView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-        initialTabIndex: tabIdx,
-      );
+      return WebAuxMastersView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"), initialTabIndex: tabIdx);
     }
 
-    // DEFAULT: DASHBOARD LEVEL 0 / LEVEL 1 HUBS GRID
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         WebKpiStrip(webPh: webPh),
         const SizedBox(height: 20),
-        WebModuleGrid(
-          currentView: currentView,
-          onHubTap: _navigateToHub,
-          onActionTap: _handleActionTap,
-          onBackToHome: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-        ),
+        WebModuleGrid(currentView: currentView, onHubTap: _navigateToHub, onActionTap: _handleActionTap, onBackToHome: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES")),
         const SizedBox(height: 25),
-        if (currentView == "HOME")
-          WebInvoiceFeed(
-            webPh: webPh,
-          ),
+        if (currentView == "HOME") WebInvoiceFeed(webPh: webPh),
       ],
     );
   }
@@ -273,41 +194,17 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
   Widget _buildBreadcrumbs() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
-      ),
+      decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white10)),
       child: Row(
         children: [
-          InkWell(
-            onTap: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-            child: const Row(
-              children: [
-                Icon(Icons.home_rounded, color: Color(0xFF38BDF8), size: 15),
-                SizedBox(width: 6),
-                Text("Home", style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
+          InkWell(onTap: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"), child: const Row(children: [Icon(Icons.home_rounded, color: Color(0xFF38BDF8), size: 15), SizedBox(width: 6), Text("Home", style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold))])),
           if (currentView != "HOME") ...[
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 15),
-            const SizedBox(width: 8),
+            const SizedBox(width: 8), const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 15), const SizedBox(width: 8),
             Text(currentViewTitle, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900)),
           ],
           const Spacer(),
           if (currentView != "HOME")
-            InkWell(
-              onTap: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-              child: const Row(
-                children: [
-                  Icon(Icons.arrow_back_rounded, color: Colors.white54, size: 14),
-                  SizedBox(width: 4),
-                  Text("Back to Hubs", style: TextStyle(color: Colors.white54, fontSize: 10.5, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
+            InkWell(onTap: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"), child: const Row(children: [Icon(Icons.arrow_back_rounded, color: Colors.white54, size: 14), SizedBox(width: 4), Text("Back to Hubs", style: TextStyle(color: Colors.white54, fontSize: 10.5, fontWeight: FontWeight.bold))])),
         ],
       ),
     );
