@@ -1,3 +1,390 @@
+#!/bin/bash
+set -e
+
+# 1. Environment & Token Setup
+export CLOUDFLARE_API_TOKEN="cfat_cSDnYsvc0geZYIGlKNEAVLgT5YTWOpeAYL1Wq9y44ebe8b1e"
+export CLOUDFLARE_ACCOUNT_ID="7a2686af5567f6f24cb5a7a5799de277"
+
+# Auto-detect Flutter PATH
+FLUTTER_BIN=""
+for p in "$HOME/flutter/bin" "/workspaces/flutter/bin" "/usr/local/flutter/bin" "/opt/flutter/bin" "/sdks/flutter/bin"; do
+  if [ -f "$p/flutter" ]; then
+    FLUTTER_BIN="$p"
+    break
+  fi
+done
+
+if [ -z "$FLUTTER_BIN" ]; then
+  FOUND=$(find /home/codespace /opt /usr/local /workspaces -name "flutter" -type f -executable 2>/dev/null | grep "/bin/flutter$" | head -n 1)
+  if [ -n "$FOUND" ]; then
+    FLUTTER_BIN=$(dirname "$FOUND")
+  fi
+fi
+
+if [ -n "$FLUTTER_BIN" ]; then
+  export PATH="$FLUTTER_BIN:$PATH"
+fi
+
+echo -e "\033[0;34m================================================================\033[0m"
+echo -e "\033[0;34m   🚀 DEPLOYING #PH-LIVE-200 (4 EXACT APP CHALLAN BUTTONS)       \033[0m"
+echo -e "\033[0;34m================================================================\033[0m\n"
+
+# 2. Update web_top_bar.dart with #PH-LIVE-200 Badge
+echo -e "\033[1;33m[1/5] Updating Top Bar Badge to #PH-LIVE-200...\033[0m"
+cat << 'TOPBAR_EOF' > lib/web_live_sync/components/web_top_bar.dart
+// FILE: lib/web_live_sync/components/web_top_bar.dart
+
+import 'package:flutter/material.dart';
+import '../pharoah_web_manager.dart';
+
+class WebTopBar extends StatelessWidget implements PreferredSizeWidget {
+  final PharoahWebManager webPh;
+  final ValueChanged<String>? onSearchChanged;
+
+  const WebTopBar({
+    super.key,
+    required this.webPh,
+    this.onSearchChanged,
+  });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(60);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0F172A),
+        border: Border(bottom: BorderSide(color: Colors.white10)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: const BoxDecoration(
+              color: Color(0x332563EB),
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+            ),
+            child: const Icon(Icons.storefront_rounded, color: Color(0xFF38BDF8), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                webPh.companyName.toUpperCase(),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              Row(
+                children: [
+                  Text(
+                    "FY: ${webPh.financialYear}",
+                    style: const TextStyle(
+                      fontSize: 9.5,
+                      color: Color(0xFF38BDF8),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0x2610B981),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.greenAccent, width: 0.5),
+                    ),
+                    child: const Text(
+                      "#PH-LIVE-200",
+                      style: TextStyle(color: Colors.greenAccent, fontSize: 8.5, fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Container(
+              height: 36,
+              constraints: const BoxConstraints(maxWidth: 380),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: TextField(
+                onChanged: onSearchChanged,
+                style: const TextStyle(color: Colors.white, fontSize: 11.5),
+                decoration: const InputDecoration(
+                  hintText: "Search Medicines, Customers, Invoices...",
+                  hintStyle: TextStyle(color: Colors.white38, fontSize: 11),
+                  prefixIcon: Icon(Icons.search_rounded, color: Color(0xFF38BDF8), size: 16),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 9),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0x1F10B981),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0x4D10B981)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.circle, color: Colors.greenAccent, size: 7),
+                SizedBox(width: 6),
+                Text(
+                  "LIVE CLOUD",
+                  style: TextStyle(
+                    color: Colors.greenAccent,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          IconButton(
+            icon: const Icon(Icons.sync_rounded, color: Colors.white70, size: 20),
+            tooltip: "Refresh Live Data",
+            onPressed: () {
+              webPh.refreshStoreData();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("🔄 Live Cloud Database Refreshed!"),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+            tooltip: "Sign Out",
+            onPressed: () => _confirmSignOut(context, webPh),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmSignOut(BuildContext context, PharoahWebManager webPh) {
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: Colors.white10),
+        ),
+        title: const Text("Sign Out Workstation?", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        content: const Text(
+          "Are you sure you want to disconnect from this store workstation?",
+          style: TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: const Text("CANCEL", style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.pop(c);
+              webPh.signOut();
+            },
+            child: const Text("SIGN OUT", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+TOPBAR_EOF
+
+# 3. Update web_modules_registry.dart with 4 Exact App Challan Buttons
+echo -e "\033[1;33m[2/5] Registering 4 App Challan actions in web_modules_registry.dart...\033[0m"
+cat << 'REGISTRY_EOF' > lib/web_live_sync/web_modules_registry.dart
+import 'package:flutter/material.dart';
+
+class WebActionItem {
+  final String key;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+
+  const WebActionItem({
+    required this.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+  });
+}
+
+class WebHubItem {
+  final String id;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final List<WebActionItem> subActions;
+
+  const WebHubItem({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.subActions,
+  });
+}
+
+class WebModulesRegistry {
+  static const List<WebHubItem> allHubs = [
+    // 1. BILLING & TRANSACTIONS
+    WebHubItem(
+      id: "BILLING",
+      title: "BILLING & SALES",
+      subtitle: "Invoicing, Purchases & Registers",
+      icon: Icons.receipt_long_rounded,
+      color: Color(0xFF2563EB),
+      subActions: [
+        WebActionItem(key: "GO_SALE", title: "New Sale Bill", subtitle: "Standard Outward Tax Invoice", icon: Icons.add_shopping_cart, color: Color(0xFF2563EB)),
+        WebActionItem(key: "GO_PURCHASE", title: "Purchase", subtitle: "Stock Inward Invoicing", icon: Icons.downloading_rounded, color: Color(0xFFEA580C)),
+        WebActionItem(key: "GO_SALE_REG", title: "Sale Reg", subtitle: "Outward Bills Summary & Audit", icon: Icons.description_outlined, color: Color(0xFF3B82F6)),
+        WebActionItem(key: "GO_PUR_REG", title: "Pur Reg", subtitle: "Inward Tax Register & Summary", icon: Icons.history_rounded, color: Color(0xFFB45309)),
+      ],
+    ),
+
+    // 2. DELIVERY CHALLANS (4 EXACT APP BUTTONS)
+    WebHubItem(
+      id: "CHALLANS",
+      title: "CHALLAN MANAGEMENT",
+      subtitle: "Inward/Outward Notes & Registers",
+      icon: Icons.local_shipping_rounded,
+      color: Color(0xFF0F766E),
+      subActions: [
+        WebActionItem(key: "GO_CHALLAN_SALE", title: "Sale Challan", subtitle: "Outward Delivery Note", icon: Icons.local_shipping_rounded, color: Colors.teal),
+        WebActionItem(key: "GO_CHALLAN_PUR", title: "Pur Challan", subtitle: "Inward Purchase Note", icon: Icons.inventory_2_rounded, color: Colors.orange),
+        WebActionItem(key: "GO_CHALLAN_SALE_REG", title: "Sale Reg", subtitle: "Outward Challans Register", icon: Icons.list_alt_rounded, color: Colors.indigo),
+        WebActionItem(key: "GO_CHALLAN_PUR_REG", title: "Pur Reg", subtitle: "Inward Challans Register", icon: Icons.history_edu_rounded, color: Colors.amber),
+      ],
+    ),
+
+    // 3. RETURNS
+    WebHubItem(
+      id: "RETURNS",
+      title: "RETURNS & REVERSALS",
+      subtitle: "Credit Notes, Debit Notes & Breakage",
+      icon: Icons.assignment_return_rounded,
+      color: Color(0xFFDC2626),
+      subActions: [
+        WebActionItem(key: "GO_CN", title: "Credit Note", subtitle: "Sellable Customer Return", icon: Icons.assignment_return_rounded, color: Color(0xFFDC2626)),
+        WebActionItem(key: "GO_DN", title: "Debit Note", subtitle: "Return to Distributor", icon: Icons.remove_shopping_cart_rounded, color: Color(0xFF92400E)),
+        WebActionItem(key: "GO_BREAKAGE", title: "Breakage / Expiry", subtitle: "Non-Sellable Stock Out", icon: Icons.delete_sweep_rounded, color: Color(0xFFEA580C)),
+        WebActionItem(key: "GO_RET_REG", title: "Return Reg", subtitle: "Full Reversals History", icon: Icons.format_list_bulleted_rounded, color: Color(0xFF991B1B)),
+      ],
+    ),
+
+    // 4. INVENTORY
+    WebHubItem(
+      id: "INVENTORY",
+      title: "STOCK & ANALYTICS",
+      subtitle: "Live Stock, 1.5x Shortage & Batches",
+      icon: Icons.inventory_2_rounded,
+      color: Color(0xFF7C3AED),
+      subActions: [
+        WebActionItem(key: "GO_STOCK", title: "Stock", subtitle: "Batch & Expiry Search", icon: Icons.view_in_ar_rounded, color: Color(0xFF7C3AED)),
+        WebActionItem(key: "GO_SHORTAGE", title: "Shortage", subtitle: "45-Days Requirement PO", icon: Icons.trending_down_rounded, color: Color(0xFFDC2626)),
+        WebActionItem(key: "GO_ITEM_LEDGER", title: "Ledger", subtitle: "In/Out Stock Timeline", icon: Icons.menu_book_rounded, color: Color(0xFF475569)),
+        WebActionItem(key: "GO_DUMP", title: "Dumping", subtitle: "Dead Stock Analysis (90 Days)", icon: Icons.delete_sweep_outlined, color: Color(0xFFC2410C)),
+      ],
+    ),
+
+    // 5. ACCOUNTS
+    WebHubItem(
+      id: "ACCOUNTS",
+      title: "CASH & BANK ACCOUNTS",
+      subtitle: "Daybook, Vouchers & Ledgers",
+      icon: Icons.account_balance_wallet_rounded,
+      color: Color(0xFF3730A3),
+      subActions: [
+        WebActionItem(key: "GO_DAYBOOK", title: "Daybook", subtitle: "Daily Inflow & Outflow", icon: Icons.event_note_rounded, color: Color(0xFF475569)),
+        WebActionItem(key: "GO_LEDGERS", title: "Ledgers", subtitle: "Customer Balances", icon: Icons.people_alt_rounded, color: Color(0xFF4338CA)),
+        WebActionItem(key: "GO_RECEIPT", title: "Receipts", subtitle: "Payment Received (Cash/Bank)", icon: Icons.add_chart_rounded, color: Color(0xFF15803D)),
+        WebActionItem(key: "GO_PAYMENT", title: "Payments", subtitle: "Supplier Payment Out", icon: Icons.analytics_rounded, color: Color(0xFFB91C1C)),
+      ],
+    ),
+
+    // 6. MASTERS
+    WebHubItem(
+      id: "MASTERS",
+      title: "BUSINESS MASTERS",
+      subtitle: "Parties, Medicines, Salts & Brands",
+      icon: Icons.stars_rounded,
+      color: Color(0xFFC2410C),
+      subActions: [
+        WebActionItem(key: "GO_M_PARTY", title: "Parties", subtitle: "Customers & Suppliers", icon: Icons.group_add_rounded, color: Color(0xFF4338CA)),
+        WebActionItem(key: "GO_M_ITEM", title: "Items", subtitle: "Drug & Product Catalog", icon: Icons.medication_rounded, color: Color(0xFF7C3AED)),
+        WebActionItem(key: "GO_M_BATCH", title: "Batches", subtitle: "Central Batch Adjustments", icon: Icons.layers_outlined, color: Color(0xFF312E81)),
+        WebActionItem(key: "GO_M_ROUTE", title: "Routes", subtitle: "Delivery Route Planner", icon: Icons.map_rounded, color: Color(0xFF0F766E)),
+        WebActionItem(key: "GO_M_COMP", title: "Company", subtitle: "Manufacturer Library", icon: Icons.business_rounded, color: Color(0xFF9A3412)),
+        WebActionItem(key: "GO_M_SALT", title: "Salt Master", subtitle: "Mono/Duo Salt Master", icon: Icons.science_rounded, color: Color(0xFFC2410C)),
+      ],
+    ),
+
+    // 7. GST
+    WebHubItem(
+      id: "GST",
+      title: "GST COMPLIANCE",
+      subtitle: "GSTR-1, GSTR-3B & Reconciliations",
+      icon: Icons.verified_rounded,
+      color: Color(0xFF15803D),
+      subActions: [
+        WebActionItem(key: "GO_GST_1", title: "GSTR-1", subtitle: "B2B, B2C & HSN Summary", icon: Icons.assignment_outlined, color: Color(0xFF15803D)),
+        WebActionItem(key: "GO_GST_3B", title: "GSTR-3B", subtitle: "Monthly Tax Computation", icon: Icons.summarize_outlined, color: Color(0xFF2563EB)),
+        WebActionItem(key: "GO_GST_RECON", title: "Portal", subtitle: "ITC Reconciliation", icon: Icons.fact_check_outlined, color: Color(0xFF0D9488)),
+      ],
+    ),
+
+    // 8. DATA HUB
+    WebHubItem(
+      id: "DATA_HUB",
+      title: "DATA EXCHANGE HUB",
+      subtitle: "C2C Store Sync & 39-Col Universal CSV",
+      icon: Icons.cloud_sync_rounded,
+      color: Color(0xFF334155),
+      subActions: [
+        WebActionItem(key: "GO_C2C", title: "Store to Store", subtitle: "Internal Branch Synchronization", icon: Icons.sync_alt_rounded, color: Color(0xFF2563EB)),
+        WebActionItem(key: "GO_C2V", title: "Vendor Supply", subtitle: "External Trade (Masked Rate)", icon: Icons.business_center_rounded, color: Color(0xFF0D9488)),
+        WebActionItem(key: "GO_CSV", title: "39-Col CSV", subtitle: "Universal Data Import/Export", icon: Icons.table_chart_rounded, color: Color(0xFFD97706)),
+      ],
+    ),
+  ];
+}
+REGISTRY_EOF
+
+# 4. Create Web Challans View with the 4 Exact App Buttons
+echo -e "\033[1;33m[3/5] Writing 4-Button Challans View in web_challan_view.dart...\033[0m"
+cat << 'CHALLAN_EOF' > lib/web_live_sync/web_challan_view.dart
 // FILE: lib/web_live_sync/web_challan_view.dart
 
 import 'package:flutter/material.dart';
@@ -1112,3 +1499,26 @@ class _WebChallanViewState extends State<WebChallanView> {
     );
   }
 }
+CHALLAN_EOF
+
+# 5. Build and Deploy directly to Cloudflare Pages (with permanent token)
+echo -e "\033[1;33m[4/5] Freeing RAM and compiling Web Bundle (#PH-LIVE-200)...\033[0m"
+pkill -f "analysis_server" 2>/dev/null || true
+pkill -f "dart_language_server" 2>/dev/null || true
+sync
+echo 3 | sudo tee /proc/sys/vm/drop_caches 2>/dev/null || true
+
+rm -rf build/web
+flutter build web -t lib/web_live_sync/web_main.dart --release --base-href "/" --pwa-strategy=none --no-tree-shake-icons --dart2js-optimization=O1
+
+echo -e "\033[1;33m[5/5] Deploying live to Cloudflare Pages (Production)...\033[0m"
+npx wrangler pages deploy build/web --project-name=pharoah-erp --branch=main --commit-dirty=true
+
+git add .
+git commit -m "Deploy #PH-LIVE-200 with 4 Exact App Challan Buttons" || true
+git push origin main || true
+
+echo -e "\n\033[0;34m================================================================\033[0m"
+echo -e "\033[0;32m  🎉 #PH-LIVE-200 DEPLOYED SUCCESSFULLY TO PRODUCTION!\033[0m"
+echo -e "\033[0;32m  🌐 LIVE AT: https://pharoah-erp.pages.dev\033[0m"
+echo -e "\033[0;34m================================================================\033[0m"

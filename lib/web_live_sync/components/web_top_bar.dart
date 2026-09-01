@@ -67,9 +67,9 @@ class WebTopBar extends StatelessWidget implements PreferredSizeWidget {
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: Colors.greenAccent, width: 0.5),
                     ),
-                    child: Text(
-                      webPh.activeStoreToken.isNotEmpty ? webPh.activeStoreToken : "#PH-LIVE",
-                      style: const TextStyle(color: Colors.greenAccent, fontSize: 8, fontWeight: FontWeight.w900),
+                    child: const Text(
+                      "#PH-LIVE-200",
+                      style: TextStyle(color: Colors.greenAccent, fontSize: 8.5, fontWeight: FontWeight.w900),
                     ),
                   ),
                 ],
