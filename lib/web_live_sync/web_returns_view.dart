@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'web_models.dart';
 import 'pharoah_web_manager.dart';
 import 'web_app_date_logic.dart';
-import 'web_pharoah_numbering_engine.dart';
 import 'web_pdf_router_service.dart';
 
 class WebReturnsView extends StatefulWidget {
@@ -22,38 +21,18 @@ class WebReturnsView extends StatefulWidget {
 class _WebReturnsViewState extends State<WebReturnsView> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  final cnNumberC = TextEditingController();
-  final cnExtraDiscC = TextEditingController(text: "0");
-  DateTime cnDate = DateTime.now();
-  Party? cnSelectedCustomer;
-  List<BillItem> cnItems = [];
-  bool cnIsBreakage = false;
-
-  final dnNumberC = TextEditingController();
-  final dnExtraDiscC = TextEditingController(text: "0");
-  DateTime dnDate = DateTime.now();
-  Party? dnSelectedSupplier;
-  List<PurchaseItem> dnItems = [];
-  bool dnIsBreakage = false;
-
   DateTime regFromDate = DateTime.now();
   DateTime regToDate = DateTime.now();
   String registerSearch = "";
   bool _isInit = false;
-
-  bool isSelectionMode = false;
-  List<String> selectedReturnIds = [];
-  bool isProcessing = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this, initialIndex: widget.initialTabIndex);
     final webPh = Provider.of<PharoahWebManager>(context, listen: false);
-    cnNumberC.text = WebPharoahNumberingEngine.getNextNumber(prefix: "CN-", startFrom: 101, currentList: webPh.saleReturns);
-    dnNumberC.text = WebPharoahNumberingEngine.getNextNumber(prefix: "DN-", startFrom: 101, currentList: webPh.purchaseReturns);
-    cnDate = WebAppDateLogic.getSmartDate(webPh.financialYear);
-    dnDate = cnDate;
+    regToDate = DateTime.now();
+    regFromDate = WebAppDateLogic.getFYStart(webPh.financialYear);
   }
 
   @override
@@ -72,13 +51,33 @@ class _WebReturnsViewState extends State<WebReturnsView> with SingleTickerProvid
 
   DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
+  DateTime _getReturnDate(dynamic r) {
+    if (r is SaleReturn) return r.date;
+    if (r is PurchaseReturn) return r.date;
+    return DateTime.now();
+  }
+
+  double _getReturnTotal(dynamic r) {
+    if (r is SaleReturn) return r.totalAmount;
+    if (r is PurchaseReturn) return r.totalAmount;
+    return 0.0;
+  }
+
+  String _getReturnParty(dynamic r) {
+    if (r is SaleReturn) return r.partyName;
+    if (r is PurchaseReturn) return r.distributorName;
+    return "";
+  }
+
+  String _getReturnBillNo(dynamic r) {
+    if (r is SaleReturn) return r.billNo;
+    if (r is PurchaseReturn) return r.billNo;
+    return "";
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
-    cnNumberC.dispose();
-    cnExtraDiscC.dispose();
-    dnNumberC.dispose();
-    dnExtraDiscC.dispose();
     super.dispose();
   }
 
@@ -91,13 +90,16 @@ class _WebReturnsViewState extends State<WebReturnsView> with SingleTickerProvid
     final tDateOnly = _dateOnly(regToDate);
 
     List<dynamic> allReturns = [...webPh.saleReturns, ...webPh.purchaseReturns];
-    allReturns.sort((a, b) => (b.date as DateTime).compareTo(a.date as DateTime));
+    allReturns.sort((a, b) => _getReturnDate(b).compareTo(_getReturnDate(a)));
 
     final filtered = allReturns.where((r) {
-      final rDateOnly = _dateOnly(r.date as DateTime);
+      final rDateOnly = _dateOnly(_getReturnDate(r));
       bool dateMatch = !rDateOnly.isBefore(fDateOnly) && !rDateOnly.isAfter(tDateOnly);
-      String name = r is SaleReturn ? r.partyName : (r as PurchaseReturn).distributorName;
-      bool searchMatch = registerSearch.isEmpty || name.toLowerCase().contains(registerSearch.toLowerCase()) || r.billNo.toString().toLowerCase().contains(registerSearch.toLowerCase());
+      String name = _getReturnParty(r);
+      String billNo = _getReturnBillNo(r);
+      bool searchMatch = registerSearch.isEmpty || 
+          name.toLowerCase().contains(registerSearch.toLowerCase()) || 
+          billNo.toLowerCase().contains(registerSearch.toLowerCase());
       return dateMatch && searchMatch;
     }).toList();
 
@@ -109,7 +111,12 @@ class _WebReturnsViewState extends State<WebReturnsView> with SingleTickerProvid
         children: [
           Row(
             children: [
-              ElevatedButton.icon(onPressed: widget.onBack, icon: const Icon(Icons.arrow_back_rounded, size: 16), label: const Text("BACK"), style: ElevatedButton.styleFrom(backgroundColor: Colors.white12, foregroundColor: Colors.white)),
+              ElevatedButton.icon(
+                onPressed: widget.onBack, 
+                icon: const Icon(Icons.arrow_back_rounded, size: 16), 
+                label: const Text("BACK"), 
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.white12, foregroundColor: Colors.white)
+              ),
               const SizedBox(width: 15),
               const Text("RETURNS & REVERSALS HUB", style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
             ],
@@ -118,16 +125,24 @@ class _WebReturnsViewState extends State<WebReturnsView> with SingleTickerProvid
           Container(
             decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(12)),
             child: TabBar(
-              controller: _tabController, indicatorColor: const Color(0xFFDC2626), labelColor: const Color(0xFFF87171), unselectedLabelColor: Colors.white54,
-              tabs: const [Tab(text: "CREDIT NOTE"), Tab(text: "DEBIT NOTE"), Tab(text: "REGISTER")],
+              controller: _tabController, 
+              indicatorColor: const Color(0xFFDC2626), 
+              labelColor: const Color(0xFFF87171), 
+              unselectedLabelColor: Colors.white54,
+              tabs: const [Tab(text: "CREDIT NOTE (SALE RETURN)"), Tab(text: "DEBIT NOTE (PUR RETURN)"), Tab(text: "RETURNS REGISTER")],
             ),
           ),
           const SizedBox(height: 16),
-          Expanded(child: TabBarView(controller: _tabController, children: [
-            const Center(child: Text("Credit Note Screen", style: TextStyle(color: Colors.white54))),
-            const Center(child: Text("Debit Note Screen", style: TextStyle(color: Colors.white54))),
-            _buildRegister(filtered, webPh, activeShop),
-          ])),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController, 
+              children: [
+                const Center(child: Text("Credit Note Entry Screen", style: TextStyle(color: Colors.white54))),
+                const Center(child: Text("Debit Note Entry Screen", style: TextStyle(color: Colors.white54))),
+                _buildRegister(filtered, webPh, activeShop),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -138,7 +153,13 @@ class _WebReturnsViewState extends State<WebReturnsView> with SingleTickerProvid
       children: [
         TextField(
           style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(hintText: "Search Register...", filled: true, fillColor: Colors.black26, border: InputBorder.none),
+          decoration: const InputDecoration(
+            hintText: "Search in Returns Register...", 
+            filled: true, 
+            fillColor: Colors.black26, 
+            border: InputBorder.none,
+            prefixIcon: Icon(Icons.search, color: Color(0xFFDC2626)),
+          ),
           onChanged: (v) => setState(() => registerSearch = v),
         ),
         const SizedBox(height: 12),
@@ -148,25 +169,39 @@ class _WebReturnsViewState extends State<WebReturnsView> with SingleTickerProvid
             itemBuilder: (c, i) {
               final item = filtered[i];
               bool isCn = item is SaleReturn;
-              String party = isCn ? item.partyName : (item as PurchaseReturn).distributorName;
+              String party = _getReturnParty(item);
+              String billNo = _getReturnBillNo(item);
+              double total = _getReturnTotal(item);
+
               return Card(
                 color: const Color(0xFF1E293B),
                 child: ListTile(
-                  title: Text(party, style: const TextStyle(color: Colors.white)),
-                  subtitle: Text("No: ${item.billNo}", style: const TextStyle(color: Colors.white54)),
+                  dense: true,
+                  leading: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isCn ? const Color(0x33DC2626) : const Color(0x33F59E0B),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(isCn ? "CN" : "DN", style: TextStyle(color: isCn ? const Color(0xFFF87171) : const Color(0xFFFBBF24), fontSize: 9, fontWeight: FontWeight.bold)),
+                  ),
+                  title: Text(party, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.5)),
+                  subtitle: Text("No: $billNo", style: const TextStyle(color: Colors.white54, fontSize: 10.5)),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Text("₹${total.toStringAsFixed(2)}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(width: 8),
                       IconButton(
-                        icon: const Icon(Icons.print, color: Colors.cyanAccent),
+                        icon: const Icon(Icons.print, color: Colors.cyanAccent, size: 18),
                         onPressed: () {
                           final pObj = webPh.parties.firstWhere((p) => p.name == party, orElse: () => Party(id: 'temp', name: party));
-                          if (isCn) {
-                            WebPdfRouterService.printCreditNote(returnObj: item as SaleReturn, party: pObj, shop: activeShop);
-                          } else {
-                            WebPdfRouterService.printDebitNote(returnObj: item as PurchaseReturn, party: pObj, shop: activeShop);
+                          if (item is SaleReturn) {
+                            WebPdfRouterService.printCreditNote(returnObj: item, party: pObj, shop: activeShop);
+                          } else if (item is PurchaseReturn) {
+                            WebPdfRouterService.printDebitNote(returnObj: item, party: pObj, shop: activeShop);
                           }
-                        }
+                        },
                       ),
                     ],
                   ),

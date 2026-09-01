@@ -1,3 +1,209 @@
+#!/bin/bash
+set -e
+
+echo -e "\033[0;34m====================================================\033[0m"
+echo -e "\033[0;34m   🔍 DETECTING FLUTTER & DEPLOYING 5 CHALLAN BUTTONS \033[0m"
+echo -e "\033[0;34m====================================================\033[0m\n"
+
+# 1. Auto-detect or Setup Flutter SDK
+FLUTTER_BIN=""
+for p in "$HOME/flutter/bin" "/workspaces/flutter/bin" "/usr/local/flutter/bin" "/opt/flutter/bin" "/sdks/flutter/bin"; do
+  if [ -f "$p/flutter" ]; then
+    FLUTTER_BIN="$p"
+    break
+  fi
+done
+
+if [ -z "$FLUTTER_BIN" ]; then
+  FOUND=$(find /home/codespace /opt /usr/local /workspaces -name "flutter" -type f -executable 2>/dev/null | grep "/bin/flutter$" | head -n 1)
+  if [ -n "$FOUND" ]; then
+    FLUTTER_BIN=$(dirname "$FOUND")
+  fi
+fi
+
+if [ -n "$FLUTTER_BIN" ]; then
+  echo -e "  \033[0;32m✔ Found Flutter at:\033[0m $FLUTTER_BIN"
+  export PATH="$FLUTTER_BIN:$PATH"
+else
+  echo -e "  \033[1;33m⚠ Flutter not found in system paths. Installing Flutter 3.27.4...\033[0m"
+  cd $HOME
+  wget -q https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.27.4-stable.tar.xz
+  tar -xf flutter_linux_3.27.4-stable.tar.xz > /dev/null 2>&1
+  rm flutter_linux_3.27.4-stable.tar.xz
+  export PATH="$HOME/flutter/bin:$PATH"
+  cd /workspaces/New-ph || cd /workspaces/* || true
+fi
+
+echo -e "  \033[0;32m✔ Active Flutter:\033[0m $(flutter --version | head -n 1)\n"
+
+# 2. Update web_modules_registry.dart with 5 Challan Buttons
+echo -e "\033[1;33m[1/4] Registering 5 Challan actions in web_modules_registry.dart...\033[0m"
+cat << 'REGISTRY_EOF' > lib/web_live_sync/web_modules_registry.dart
+import 'package:flutter/material.dart';
+
+class WebActionItem {
+  final String key;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+
+  const WebActionItem({
+    required this.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+  });
+}
+
+class WebHubItem {
+  final String id;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final List<WebActionItem> subActions;
+
+  const WebHubItem({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.subActions,
+  });
+}
+
+class WebModulesRegistry {
+  static const List<WebHubItem> allHubs = [
+    // 1. BILLING & TRANSACTIONS
+    WebHubItem(
+      id: "BILLING",
+      title: "BILLING & SALES",
+      subtitle: "Invoicing, Purchases & Registers",
+      icon: Icons.receipt_long_rounded,
+      color: Color(0xFF2563EB),
+      subActions: [
+        WebActionItem(key: "GO_SALE", title: "New Sale Bill", subtitle: "Standard Outward Tax Invoice", icon: Icons.add_shopping_cart, color: Color(0xFF2563EB)),
+        WebActionItem(key: "GO_PURCHASE", title: "Purchase Inward", subtitle: "Stock Inward Invoicing", icon: Icons.downloading_rounded, color: Color(0xFFEA580C)),
+        WebActionItem(key: "GO_SALE_REG", title: "Sale Register", subtitle: "Outward Bills Summary & Audit", icon: Icons.description_outlined, color: Color(0xFF3B82F6)),
+        WebActionItem(key: "GO_PUR_REG", title: "Purchase Register", subtitle: "Inward Tax Register & Summary", icon: Icons.history_rounded, color: Color(0xFFB45309)),
+      ],
+    ),
+
+    // 2. DELIVERY CHALLANS (5 EXACT BUTTONS)
+    WebHubItem(
+      id: "CHALLANS",
+      title: "DELIVERY CHALLANS",
+      subtitle: "Inward/Outward Notes, Stitcher & Registers",
+      icon: Icons.local_shipping_rounded,
+      color: Color(0xFF0F766E),
+      subActions: [
+        WebActionItem(key: "GO_CHALLAN_SALE", title: "Outward Sale Challan", subtitle: "Dispatch Delivery Note", icon: Icons.local_shipping_rounded, color: Color(0xFF0F766E)),
+        WebActionItem(key: "GO_CHALLAN_PUR", title: "Inward Purchase Challan", subtitle: "Stock Inward Receipt Note", icon: Icons.inventory_2_rounded, color: Color(0xFFD97706)),
+        WebActionItem(key: "GO_STITCHER", title: "Challan to Bill Converter", subtitle: "Stitch Pending Challans to Invoice", icon: Icons.auto_fix_high_rounded, color: Color(0xFF2DD4BF)),
+        WebActionItem(key: "GO_CHALLAN_SALE_REG", title: "Sale Challans Register", subtitle: "Track Pending Deliveries", icon: Icons.list_alt_rounded, color: Color(0xFF4338CA)),
+        WebActionItem(key: "GO_CHALLAN_PUR_REG", title: "Purchase Challans Register", subtitle: "Audit Inward Dispatches", icon: Icons.history_edu_rounded, color: Color(0xFFB45309)),
+      ],
+    ),
+
+    // 3. RETURNS
+    WebHubItem(
+      id: "RETURNS",
+      title: "RETURNS & REVERSALS",
+      subtitle: "Credit Notes, Debit Notes & Breakage",
+      icon: Icons.assignment_return_rounded,
+      color: Color(0xFFDC2626),
+      subActions: [
+        WebActionItem(key: "GO_CN", title: "Credit Note (Sale Return)", subtitle: "Sellable Customer Return", icon: Icons.assignment_return_rounded, color: Color(0xFFDC2626)),
+        WebActionItem(key: "GO_DN", title: "Debit Note (Purchase Return)", subtitle: "Return to Distributor", icon: Icons.remove_shopping_cart_rounded, color: Color(0xFF92400E)),
+        WebActionItem(key: "GO_BREAKAGE", title: "Breakage / Expiry Return", subtitle: "Non-Sellable Stock Out", icon: Icons.delete_sweep_rounded, color: Color(0xFFEA580C)),
+        WebActionItem(key: "GO_RET_REG", title: "Returns Audit Register", subtitle: "Full Reversals History", icon: Icons.format_list_bulleted_rounded, color: Color(0xFF991B1B)),
+      ],
+    ),
+
+    // 4. INVENTORY
+    WebHubItem(
+      id: "INVENTORY",
+      title: "INVENTORY & INTEL",
+      subtitle: "Live Stock, 1.5x Shortage & Batches",
+      icon: Icons.inventory_2_rounded,
+      color: Color(0xFF7C3AED),
+      subActions: [
+        WebActionItem(key: "GO_STOCK", title: "Live Stock Explorer", subtitle: "Batch & Expiry Search", icon: Icons.view_in_ar_rounded, color: Color(0xFF7C3AED)),
+        WebActionItem(key: "GO_SHORTAGE", title: "1.5x Auto Shortage Scan", subtitle: "45-Days Requirement PO", icon: Icons.trending_down_rounded, color: Color(0xFFDC2626)),
+        WebActionItem(key: "GO_ITEM_LEDGER", title: "Item Movement Ledger", subtitle: "In/Out Stock Timeline", icon: Icons.menu_book_rounded, color: Color(0xFF475569)),
+        WebActionItem(key: "GO_DUMP", title: "Dumping / Non-Moving", subtitle: "Dead Stock Analysis (90 Days)", icon: Icons.delete_sweep_outlined, color: Color(0xFFC2410C)),
+      ],
+    ),
+
+    // 5. ACCOUNTS
+    WebHubItem(
+      id: "ACCOUNTS",
+      title: "ACCOUNTS & KHAATA",
+      subtitle: "Daybook, Vouchers & Ledgers",
+      icon: Icons.account_balance_wallet_rounded,
+      color: Color(0xFF3730A3),
+      subActions: [
+        WebActionItem(key: "GO_DAYBOOK", title: "Daybook Register", subtitle: "Daily Inflow & Outflow", icon: Icons.event_note_rounded, color: Color(0xFF475569)),
+        WebActionItem(key: "GO_LEDGERS", title: "Customer Ledgers", subtitle: "Outstanding & Balances", icon: Icons.people_alt_rounded, color: Color(0xFF4338CA)),
+        WebActionItem(key: "GO_RECEIPT", title: "Receipt Voucher", subtitle: "Payment Received (Cash/Bank)", icon: Icons.add_chart_rounded, color: Color(0xFF15803D)),
+        WebActionItem(key: "GO_PAYMENT", title: "Payment Voucher", subtitle: "Supplier Payment Out", icon: Icons.analytics_rounded, color: Color(0xFFB91C1C)),
+      ],
+    ),
+
+    // 6. MASTERS
+    WebHubItem(
+      id: "MASTERS",
+      title: "BUSINESS MASTERS",
+      subtitle: "Parties, Medicines, Salts & Brands",
+      icon: Icons.stars_rounded,
+      color: Color(0xFFC2410C),
+      subActions: [
+        WebActionItem(key: "GO_M_PARTY", title: "Parties & Ledgers", subtitle: "Customers & Suppliers", icon: Icons.group_add_rounded, color: Color(0xFF4338CA)),
+        WebActionItem(key: "GO_M_ITEM", title: "Item Master", subtitle: "Drug & Product Catalog", icon: Icons.medication_rounded, color: Color(0xFF7C3AED)),
+        WebActionItem(key: "GO_M_BATCH", title: "Batch Master", subtitle: "Central Batch Adjustments", icon: Icons.layers_outlined, color: Color(0xFF312E81)),
+        WebActionItem(key: "GO_M_ROUTE", title: "Routes & Areas", subtitle: "Delivery Route Planner", icon: Icons.map_rounded, color: Color(0xFF0F766E)),
+        WebActionItem(key: "GO_M_COMP", title: "Company Brands", subtitle: "Manufacturer Library", icon: Icons.business_rounded, color: Color(0xFF9A3412)),
+        WebActionItem(key: "GO_M_SALT", title: "Salt Compositions", subtitle: "Mono/Duo Salt Master", icon: Icons.science_rounded, color: Color(0xFFC2410C)),
+      ],
+    ),
+
+    // 7. GST
+    WebHubItem(
+      id: "GST",
+      title: "GST & STATUTORY",
+      subtitle: "GSTR-1, GSTR-3B & Reconciliations",
+      icon: Icons.verified_rounded,
+      color: Color(0xFF15803D),
+      subActions: [
+        WebActionItem(key: "GO_GST_1", title: "GSTR-1 (Sales Register)", subtitle: "B2B, B2C & HSN Summary", icon: Icons.assignment_outlined, color: Color(0xFF15803D)),
+        WebActionItem(key: "GO_GST_3B", title: "GSTR-3B Summary", subtitle: "Monthly Tax Computation", icon: Icons.summarize_outlined, color: Color(0xFF2563EB)),
+        WebActionItem(key: "GO_GST_RECON", title: "Portal 2A/2B Match", subtitle: "ITC Reconciliation", icon: Icons.fact_check_outlined, color: Color(0xFF0D9488)),
+      ],
+    ),
+
+    // 8. DATA HUB
+    WebHubItem(
+      id: "DATA_HUB",
+      title: "DATA EXCHANGE HUB",
+      subtitle: "C2C Store Sync & 39-Col Universal CSV",
+      icon: Icons.cloud_sync_rounded,
+      color: Color(0xFF334155),
+      subActions: [
+        WebActionItem(key: "GO_C2C", title: "Store-to-Store (C2C)", subtitle: "Internal Branch Synchronization", icon: Icons.sync_alt_rounded, color: Color(0xFF2563EB)),
+        WebActionItem(key: "GO_C2V", title: "Vendor Supply (C2V)", subtitle: "External Trade (Masked Rate)", icon: Icons.business_center_rounded, color: Color(0xFF0D9488)),
+        WebActionItem(key: "GO_CSV", title: "39-Column CSV Tool", subtitle: "Universal Data Import/Export", icon: Icons.table_chart_rounded, color: Color(0xFFD97706)),
+      ],
+    ),
+  ];
+}
+REGISTRY_EOF
+
+# 3. Update web_challan_view.dart with 5 Solid Non-Collapsing Buttons & Modules
+echo -e "\033[1;33m[2/4] Updating web_challan_view.dart with 5-Button Hub...\033[0m"
+cat << 'CHALLAN_VIEW_EOF' > lib/web_live_sync/web_challan_view.dart
 // FILE: lib/web_live_sync/web_challan_view.dart
 
 import 'package:flutter/material.dart';
@@ -373,7 +579,6 @@ class _WebChallanViewState extends State<WebChallanView> {
     final webPh = Provider.of<PharoahWebManager>(context);
 
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
@@ -409,7 +614,7 @@ class _WebChallanViewState extends State<WebChallanView> {
           ),
           const SizedBox(height: 16),
 
-          // 5 PROMINENT BUTTONS BAR
+          // 5 PROMINENT BUTTONS BAR (Exact 1:1 App Parity)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -428,7 +633,7 @@ class _WebChallanViewState extends State<WebChallanView> {
           ),
           const SizedBox(height: 20),
 
-          // 5 SOLID WORKSTATION MODULES (No unbounded height collapse)
+          // 5 DIRECT CONTENT MODULES (No unbounded height collapse)
           if (activeIndex == 0) _buildSaleChallanForm(webPh),
           if (activeIndex == 1) _buildPurchaseChallanForm(webPh),
           if (activeIndex == 2) WebChallanStitcherWizard(onBack: () => setState(() => activeIndex = 0)),
@@ -530,11 +735,11 @@ class _WebChallanViewState extends State<WebChallanView> {
         ),
         const SizedBox(height: 12),
         Container(
-          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 220),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(12)),
           child: scItems.isEmpty
-              ? const Padding(padding: EdgeInsets.all(25), child: Center(child: Text("No items in delivery challan cart. Search products above.", style: TextStyle(color: Colors.white38, fontSize: 11.5))))
+              ? const Center(child: Text("No items in delivery challan cart. Search products above.", style: TextStyle(color: Colors.white38, fontSize: 11.5)))
               : ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -695,11 +900,11 @@ class _WebChallanViewState extends State<WebChallanView> {
         ),
         const SizedBox(height: 12),
         Container(
-          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 220),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(12)),
           child: pcItems.isEmpty
-              ? const Padding(padding: EdgeInsets.all(25), child: Center(child: Text("No items in inward challan. Search products above.", style: TextStyle(color: Colors.white38, fontSize: 11.5))))
+              ? const Center(child: Text("No items in inward challan. Search products above.", style: TextStyle(color: Colors.white38, fontSize: 11.5)))
               : ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -1116,3 +1321,28 @@ class _WebChallanViewState extends State<WebChallanView> {
     );
   }
 }
+CHALLAN_VIEW_EOF
+
+# 4. Strict Analyzer Verification (0 Errors in lib/web_live_sync/)
+echo -e "\033[1;33m[3/4] Running static analyzer on lib/web_live_sync/...\033[0m"
+flutter analyze lib/web_live_sync/
+
+# 5. Build and Deploy
+echo -e "\033[1;33m[4/4] Compiling Web App & Deploying to Cloudflare Pages...\033[0m"
+pkill -f "analysis_server" 2>/dev/null || true
+pkill -f "dart_language_server" 2>/dev/null || true
+sync
+echo 3 | sudo tee /proc/sys/vm/drop_caches 2>/dev/null || true
+
+flutter build web -t lib/web_live_sync/web_main.dart --release --base-href "/" --pwa-strategy=none --no-tree-shake-icons --dart2js-optimization=O1
+
+npx wrangler pages deploy build/web --project-name=pharoah-erp --commit-dirty=true
+
+git add .
+git commit -m "Deploy 5-Button Challans Hub Live" || true
+git push origin main || true
+
+echo -e "\n\033[0;34m====================================================\033[0m"
+echo -e "\033[0;32m  🎉 5 CHALLAN BUTTONS DEPLOYED LIVE SUCCESSFULLY!\033[0m"
+echo -e "\033[0;32m  🌐 URL: https://pharoah-erp.pages.dev\033[0m"
+echo -e "\033[0;34m====================================================\033[0m"

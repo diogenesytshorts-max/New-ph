@@ -15,7 +15,6 @@ import 'sub_views/web_billing/web_new_sale_view.dart';
 import 'web_sale_summary_view.dart';
 import 'web_purchase_entry_view.dart';
 import 'web_purchase_summary_view.dart';
-import 'web_challan_stitcher_wizard.dart';
 import 'web_returns_view.dart';
 import 'web_challan_view.dart';
 import 'web_voucher_view.dart';
@@ -154,17 +153,18 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
       );
     }
 
-    // 4. PURCHASE REGISTER / AUDIT (CONNECTED!)
+    // 4. PURCHASE REGISTER / AUDIT
     if (currentView == "GO_PUR_REG") {
       return WebPurchaseSummaryView(
         onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
       );
     }
 
-    // 5. CHALLAN TO BILL STITCHER WIZARD
+    // 5. CHALLAN TO BILL CONVERTER
     if (currentView == "GO_STITCHER") {
-      return WebChallanStitcherWizard(
+      return WebChallanView(
         onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+        initialTabIndex: 2,
       );
     }
 
@@ -180,10 +180,12 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
       );
     }
 
-    // 7. DELIVERY & INWARD CHALLANS
+    // 7. DELIVERY & INWARD CHALLANS (5 BUTTON HUB)
     if (currentView == "GO_CHALLAN_SALE" || currentView == "GO_CHALLAN_PUR" || currentView == "GO_CHALLAN_SALE_REG" || currentView == "GO_CHALLAN_PUR_REG" || currentView == "CHALLANS") {
       int tabIdx = 0;
-      if (currentView == "GO_CHALLAN_PUR" || currentView == "GO_CHALLAN_PUR_REG") tabIdx = 1;
+      if (currentView == "GO_CHALLAN_PUR") tabIdx = 1;
+      if (currentView == "GO_CHALLAN_SALE_REG") tabIdx = 3;
+      if (currentView == "GO_CHALLAN_PUR_REG") tabIdx = 4;
 
       return WebChallanView(
         onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),

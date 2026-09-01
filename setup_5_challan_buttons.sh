@@ -1,3 +1,185 @@
+#!/bin/bash
+set -e
+
+export PATH="$HOME/flutter/bin:$PATH"
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${BLUE}====================================================${NC}"
+echo -e "${BLUE}   🚚 SETTING UP 5 CHALLAN BUTTONS & LIVE DEPLOY   ${NC}"
+echo -e "${BLUE}====================================================${NC}\n"
+
+# 1. Update web_modules_registry.dart with 5 Challan Buttons
+echo -e "${YELLOW}[1/5] Registering 5 Challan actions in web_modules_registry.dart...${NC}"
+cat << 'REGISTRY_EOF' > lib/web_live_sync/web_modules_registry.dart
+import 'package:flutter/material.dart';
+
+class WebActionItem {
+  final String key;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+
+  const WebActionItem({
+    required this.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+  });
+}
+
+class WebHubItem {
+  final String id;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final List<WebActionItem> subActions;
+
+  const WebHubItem({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.subActions,
+  });
+}
+
+class WebModulesRegistry {
+  static const List<WebHubItem> allHubs = [
+    // 1. BILLING & TRANSACTIONS
+    WebHubItem(
+      id: "BILLING",
+      title: "BILLING & SALES",
+      subtitle: "Invoicing, Purchases & Registers",
+      icon: Icons.receipt_long_rounded,
+      color: Color(0xFF2563EB),
+      subActions: [
+        WebActionItem(key: "GO_SALE", title: "New Sale Bill", subtitle: "Standard Outward Tax Invoice", icon: Icons.add_shopping_cart, color: Color(0xFF2563EB)),
+        WebActionItem(key: "GO_PURCHASE", title: "Purchase Inward", subtitle: "Stock Inward Invoicing", icon: Icons.downloading_rounded, color: Color(0xFFEA580C)),
+        WebActionItem(key: "GO_SALE_REG", title: "Sale Register", subtitle: "Outward Bills Summary & Audit", icon: Icons.description_outlined, color: Color(0xFF3B82F6)),
+        WebActionItem(key: "GO_PUR_REG", title: "Purchase Register", subtitle: "Inward Tax Register & Summary", icon: Icons.history_rounded, color: Color(0xFFB45309)),
+      ],
+    ),
+
+    // 2. DELIVERY CHALLANS (5 EXACT BUTTONS)
+    WebHubItem(
+      id: "CHALLANS",
+      title: "DELIVERY CHALLANS",
+      subtitle: "Inward/Outward Notes, Stitcher & Registers",
+      icon: Icons.local_shipping_rounded,
+      color: Color(0xFF0F766E),
+      subActions: [
+        WebActionItem(key: "GO_CHALLAN_SALE", title: "Outward Sale Challan", subtitle: "Dispatch Delivery Note", icon: Icons.local_shipping_rounded, color: Color(0xFF0F766E)),
+        WebActionItem(key: "GO_CHALLAN_PUR", title: "Inward Purchase Challan", subtitle: "Stock Inward Receipt Note", icon: Icons.inventory_2_rounded, color: Color(0xFFD97706)),
+        WebActionItem(key: "GO_STITCHER", title: "Challan to Bill Converter", subtitle: "Stitch Pending Challans to Invoice", icon: Icons.auto_fix_high_rounded, color: Color(0xFF2DD4BF)),
+        WebActionItem(key: "GO_CHALLAN_SALE_REG", title: "Sale Challans Register", subtitle: "Track Pending Deliveries", icon: Icons.list_alt_rounded, color: Color(0xFF4338CA)),
+        WebActionItem(key: "GO_CHALLAN_PUR_REG", title: "Purchase Challans Register", subtitle: "Audit Inward Dispatches", icon: Icons.history_edu_rounded, color: Color(0xFFB45309)),
+      ],
+    ),
+
+    // 3. RETURNS
+    WebHubItem(
+      id: "RETURNS",
+      title: "RETURNS & REVERSALS",
+      subtitle: "Credit Notes, Debit Notes & Breakage",
+      icon: Icons.assignment_return_rounded,
+      color: Color(0xFFDC2626),
+      subActions: [
+        WebActionItem(key: "GO_CN", title: "Credit Note (Sale Return)", subtitle: "Sellable Customer Return", icon: Icons.assignment_return_rounded, color: Color(0xFFDC2626)),
+        WebActionItem(key: "GO_DN", title: "Debit Note (Purchase Return)", subtitle: "Return to Distributor", icon: Icons.remove_shopping_cart_rounded, color: Color(0xFF92400E)),
+        WebActionItem(key: "GO_BREAKAGE", title: "Breakage / Expiry Return", subtitle: "Non-Sellable Stock Out", icon: Icons.delete_sweep_rounded, color: Color(0xFFEA580C)),
+        WebActionItem(key: "GO_RET_REG", title: "Returns Audit Register", subtitle: "Full Reversals History", icon: Icons.format_list_bulleted_rounded, color: Color(0xFF991B1B)),
+      ],
+    ),
+
+    // 4. INVENTORY
+    WebHubItem(
+      id: "INVENTORY",
+      title: "INVENTORY & INTEL",
+      subtitle: "Live Stock, 1.5x Shortage & Batches",
+      icon: Icons.inventory_2_rounded,
+      color: Color(0xFF7C3AED),
+      subActions: [
+        WebActionItem(key: "GO_STOCK", title: "Live Stock Explorer", subtitle: "Batch & Expiry Search", icon: Icons.view_in_ar_rounded, color: Color(0xFF7C3AED)),
+        WebActionItem(key: "GO_SHORTAGE", title: "1.5x Auto Shortage Scan", subtitle: "45-Days Requirement PO", icon: Icons.trending_down_rounded, color: Color(0xFFDC2626)),
+        WebActionItem(key: "GO_ITEM_LEDGER", title: "Item Movement Ledger", subtitle: "In/Out Stock Timeline", icon: Icons.menu_book_rounded, color: Color(0xFF475569)),
+        WebActionItem(key: "GO_DUMP", title: "Dumping / Non-Moving", subtitle: "Dead Stock Analysis (90 Days)", icon: Icons.delete_sweep_outlined, color: Color(0xFFC2410C)),
+      ],
+    ),
+
+    // 5. ACCOUNTS
+    WebHubItem(
+      id: "ACCOUNTS",
+      title: "ACCOUNTS & KHAATA",
+      subtitle: "Daybook, Vouchers & Ledgers",
+      icon: Icons.account_balance_wallet_rounded,
+      color: Color(0xFF3730A3),
+      subActions: [
+        WebActionItem(key: "GO_DAYBOOK", title: "Daybook Register", subtitle: "Daily Inflow & Outflow", icon: Icons.event_note_rounded, color: Color(0xFF475569)),
+        WebActionItem(key: "GO_LEDGERS", title: "Customer Ledgers", subtitle: "Outstanding & Balances", icon: Icons.people_alt_rounded, color: Color(0xFF4338CA)),
+        WebActionItem(key: "GO_RECEIPT", title: "Receipt Voucher", subtitle: "Payment Received (Cash/Bank)", icon: Icons.add_chart_rounded, color: Color(0xFF15803D)),
+        WebActionItem(key: "GO_PAYMENT", title: "Payment Voucher", subtitle: "Supplier Payment Out", icon: Icons.analytics_rounded, color: Color(0xFFB91C1C)),
+      ],
+    ),
+
+    // 6. MASTERS
+    WebHubItem(
+      id: "MASTERS",
+      title: "BUSINESS MASTERS",
+      subtitle: "Parties, Medicines, Salts & Brands",
+      icon: Icons.stars_rounded,
+      color: Color(0xFFC2410C),
+      subActions: [
+        WebActionItem(key: "GO_M_PARTY", title: "Parties & Ledgers", subtitle: "Customers & Suppliers", icon: Icons.group_add_rounded, color: Color(0xFF4338CA)),
+        WebActionItem(key: "GO_M_ITEM", title: "Item Master", subtitle: "Drug & Product Catalog", icon: Icons.medication_rounded, color: Color(0xFF7C3AED)),
+        WebActionItem(key: "GO_M_BATCH", title: "Batch Master", subtitle: "Central Batch Adjustments", icon: Icons.layers_outlined, color: Color(0xFF312E81)),
+        WebActionItem(key: "GO_M_ROUTE", title: "Routes & Areas", subtitle: "Delivery Route Planner", icon: Icons.map_rounded, color: Color(0xFF0F766E)),
+        WebActionItem(key: "GO_M_COMP", title: "Company Brands", subtitle: "Manufacturer Library", icon: Icons.business_rounded, color: Color(0xFF9A3412)),
+        WebActionItem(key: "GO_M_SALT", title: "Salt Compositions", subtitle: "Mono/Duo Salt Master", icon: Icons.science_rounded, color: Color(0xFFC2410C)),
+      ],
+    ),
+
+    // 7. GST
+    WebHubItem(
+      id: "GST",
+      title: "GST & STATUTORY",
+      subtitle: "GSTR-1, GSTR-3B & Reconciliations",
+      icon: Icons.verified_rounded,
+      color: Color(0xFF15803D),
+      subActions: [
+        WebActionItem(key: "GO_GST_1", title: "GSTR-1 (Sales Register)", subtitle: "B2B, B2C & HSN Summary", icon: Icons.assignment_outlined, color: Color(0xFF15803D)),
+        WebActionItem(key: "GO_GST_3B", title: "GSTR-3B Summary", subtitle: "Monthly Tax Computation", icon: Icons.summarize_outlined, color: Color(0xFF2563EB)),
+        WebActionItem(key: "GO_GST_RECON", title: "Portal 2A/2B Match", subtitle: "ITC Reconciliation", icon: Icons.fact_check_outlined, color: Color(0xFF0D9488)),
+      ],
+    ),
+
+    // 8. DATA HUB
+    WebHubItem(
+      id: "DATA_HUB",
+      title: "DATA EXCHANGE HUB",
+      subtitle: "C2C Store Sync & 39-Col Universal CSV",
+      icon: Icons.cloud_sync_rounded,
+      color: Color(0xFF334155),
+      subActions: [
+        WebActionItem(key: "GO_C2C", title: "Store-to-Store (C2C)", subtitle: "Internal Branch Synchronization", icon: Icons.sync_alt_rounded, color: Color(0xFF2563EB)),
+        WebActionItem(key: "GO_C2V", title: "Vendor Supply (C2V)", subtitle: "External Trade (Masked Rate)", icon: Icons.business_center_rounded, color: Color(0xFF0D9488)),
+        WebActionItem(key: "GO_CSV", title: "39-Column CSV Tool", subtitle: "Universal Data Import/Export", icon: Icons.table_chart_rounded, color: Color(0xFFD97706)),
+      ],
+    ),
+  ];
+}
+REGISTRY_EOF
+
+# 2. Update web_challan_view.dart with 5 Solid Non-Collapsing Buttons & Modules
+echo -e "${YELLOW}[2/5] Creating robust 5-Button Workstation in web_challan_view.dart...${NC}"
+cat << 'CHALLAN_VIEW_EOF' > lib/web_live_sync/web_challan_view.dart
 // FILE: lib/web_live_sync/web_challan_view.dart
 
 import 'package:flutter/material.dart';
@@ -373,7 +555,6 @@ class _WebChallanViewState extends State<WebChallanView> {
     final webPh = Provider.of<PharoahWebManager>(context);
 
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
@@ -409,7 +590,7 @@ class _WebChallanViewState extends State<WebChallanView> {
           ),
           const SizedBox(height: 16),
 
-          // 5 PROMINENT BUTTONS BAR
+          // 5 PROMINENT BUTTONS BAR (Exact 1:1 App Parity)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -428,7 +609,7 @@ class _WebChallanViewState extends State<WebChallanView> {
           ),
           const SizedBox(height: 20),
 
-          // 5 SOLID WORKSTATION MODULES (No unbounded height collapse)
+          // 5 DIRECT CONTENT MODULES (No unbounded height collapse)
           if (activeIndex == 0) _buildSaleChallanForm(webPh),
           if (activeIndex == 1) _buildPurchaseChallanForm(webPh),
           if (activeIndex == 2) WebChallanStitcherWizard(onBack: () => setState(() => activeIndex = 0)),
@@ -509,8 +690,7 @@ class _WebChallanViewState extends State<WebChallanView> {
             displayStringForOption: (m) => "${m.name} (${m.packing}) - Stock: ${m.stock.toInt()}",
             optionsBuilder: (textEditingValue) {
               if (textEditingValue.text.isEmpty) return const Iterable.empty();
-              return webPh.medicines.where((m) =>
-                  m.name.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+              return webPh.medicines.where((m) => m.name.toLowerCase().contains(textEditingValue.text.toLowerCase()));
             },
             onSelected: (med) => _openScItemDialog(webPh, med),
             fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
@@ -530,11 +710,11 @@ class _WebChallanViewState extends State<WebChallanView> {
         ),
         const SizedBox(height: 12),
         Container(
-          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 220),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(12)),
           child: scItems.isEmpty
-              ? const Padding(padding: EdgeInsets.all(25), child: Center(child: Text("No items in delivery challan cart. Search products above.", style: TextStyle(color: Colors.white38, fontSize: 11.5))))
+              ? const Center(child: Text("No items in delivery challan cart. Search products above.", style: TextStyle(color: Colors.white38, fontSize: 11.5)))
               : ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -674,8 +854,7 @@ class _WebChallanViewState extends State<WebChallanView> {
             displayStringForOption: (m) => "${m.name} (${m.packing})",
             optionsBuilder: (textEditingValue) {
               if (textEditingValue.text.isEmpty) return const Iterable.empty();
-              return webPh.medicines.where((m) =>
-                  m.name.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+              return webPh.medicines.where((m) => m.name.toLowerCase().contains(textEditingValue.text.toLowerCase()));
             },
             onSelected: (med) => _openPcItemDialog(webPh, med),
             fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
@@ -695,11 +874,11 @@ class _WebChallanViewState extends State<WebChallanView> {
         ),
         const SizedBox(height: 12),
         Container(
-          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 220),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(12)),
           child: pcItems.isEmpty
-              ? const Padding(padding: EdgeInsets.all(25), child: Center(child: Text("No items in inward challan. Search products above.", style: TextStyle(color: Colors.white38, fontSize: 11.5))))
+              ? const Center(child: Text("No items in inward challan. Search products above.", style: TextStyle(color: Colors.white38, fontSize: 11.5)))
               : ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -1044,7 +1223,8 @@ class _WebChallanViewState extends State<WebChallanView> {
               hintText: "Search in Challans Register (Party, Challan No)...",
               hintStyle: TextStyle(color: Colors.white38, fontSize: 11),
               prefixIcon: Icon(Icons.search, color: Color(0xFF0F766E), size: 16),
-              filled: true, fillColor: Colors.black26,
+              filled: true,
+              fillColor: Colors.black26,
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(vertical: 8),
             ),
@@ -1116,3 +1296,344 @@ class _WebChallanViewState extends State<WebChallanView> {
     );
   }
 }
+CHALLAN_VIEW_EOF
+
+# 3. Update web_portal_gateway.dart routing
+echo -e "${YELLOW}[3/5] Updating web_portal_gateway.dart routing for Challans...${NC}"
+cat << 'GATEWAY_EOF' > lib/web_live_sync/web_portal_gateway.dart
+// FILE: lib/web_live_sync/web_portal_gateway.dart
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'pharoah_web_manager.dart';
+import 'components/web_top_bar.dart';
+import 'components/web_recent_sidebar.dart';
+import 'components/web_kpi_strip.dart';
+import 'components/web_module_grid.dart';
+import 'components/web_invoice_feed.dart';
+import 'components/web_login_card.dart';
+
+// Sub Views
+import 'sub_views/web_billing/web_new_sale_view.dart';
+import 'web_sale_summary_view.dart';
+import 'web_purchase_entry_view.dart';
+import 'web_purchase_summary_view.dart';
+import 'web_challan_stitcher_wizard.dart';
+import 'web_returns_view.dart';
+import 'web_challan_view.dart';
+import 'web_voucher_view.dart';
+import 'web_product_master.dart';
+import 'web_party_master.dart';
+import 'web_batch_master.dart';
+import 'web_aux_masters.dart';
+
+class WebPortalGateway extends StatefulWidget {
+  const WebPortalGateway({super.key});
+
+  @override
+  State<WebPortalGateway> createState() => _WebPortalGatewayState();
+}
+
+class _WebPortalGatewayState extends State<WebPortalGateway> {
+  String currentView = "HOME";
+  String currentViewTitle = "MAIN BUSINESS MODULES";
+  String searchQuery = "";
+
+  List<Map<String, dynamic>> recentShortcuts = [];
+
+  void _navigateToHub(String hubId, String hubTitle) {
+    setState(() {
+      currentView = hubId;
+      currentViewTitle = hubTitle;
+    });
+  }
+
+  void _handleActionTap(String actionTitle, IconData icon, String navKey) {
+    if (!recentShortcuts.any((item) => item['module'] == navKey)) {
+      setState(() {
+        recentShortcuts.insert(0, {
+          "title": actionTitle,
+          "icon": icon,
+          "module": navKey,
+        });
+        if (recentShortcuts.length > 8) {
+          recentShortcuts.removeLast();
+        }
+      });
+    }
+
+    _navigateToHub(navKey, actionTitle.toUpperCase());
+  }
+
+  void _removeShortcut(int index) {
+    setState(() {
+      recentShortcuts.removeAt(index);
+    });
+  }
+
+  void _clearAllRecents() {
+    setState(() {
+      recentShortcuts.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final webPh = Provider.of<PharoahWebManager>(context);
+
+    if (!webPh.isAuthenticated) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF0F172A),
+        body: WebLoginCard(
+          errorMessage: webPh.errorMessage,
+          isLoading: webPh.isLoading,
+          onLogin: (token, user, pass) => webPh.loginWithStoreKey(
+            storeToken: token,
+            username: user,
+            password: pass,
+          ),
+        ),
+      );
+    }
+
+    bool isHomeDashboard = currentView == "HOME";
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0B132B),
+      appBar: WebTopBar(
+        webPh: webPh,
+        onSearchChanged: (v) => setState(() => searchQuery = v),
+      ),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isHomeDashboard)
+            WebRecentSidebar(
+              currentView: currentView,
+              recentShortcuts: recentShortcuts,
+              onHomeTap: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+              onActionTap: _handleActionTap,
+              onRemoveShortcut: _removeShortcut,
+              onClearAll: _clearAllRecents,
+            ),
+
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildBreadcrumbs(),
+                  const SizedBox(height: 16),
+                  _buildCurrentView(webPh),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCurrentView(PharoahWebManager webPh) {
+    // 1. SALES BILLING (NEW INVOICE)
+    if (currentView == "GO_SALE") {
+      return WebNewSaleView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+      );
+    }
+
+    // 2. SALE REGISTER / HISTORY
+    if (currentView == "GO_SALE_REG") {
+      return WebSaleSummaryView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+      );
+    }
+
+    // 3. PURCHASE INWARD ENTRY
+    if (currentView == "GO_PURCHASE") {
+      return WebPurchaseEntryView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+      );
+    }
+
+    // 4. PURCHASE REGISTER / AUDIT
+    if (currentView == "GO_PUR_REG") {
+      return WebPurchaseSummaryView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+      );
+    }
+
+    // 5. CHALLAN TO BILL STITCHER WIZARD
+    if (currentView == "GO_STITCHER") {
+      return WebChallanView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+        initialTabIndex: 2,
+      );
+    }
+
+    // 6. RETURNS & REVERSALS (CN / DN / REGISTER)
+    if (currentView == "GO_CN" || currentView == "GO_DN" || currentView == "GO_BREAKAGE" || currentView == "GO_RET_REG" || currentView == "RETURNS") {
+      int tabIdx = 0;
+      if (currentView == "GO_DN") tabIdx = 1;
+      if (currentView == "GO_RET_REG") tabIdx = 2;
+
+      return WebReturnsView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+        initialTabIndex: tabIdx,
+      );
+    }
+
+    // 7. DELIVERY & INWARD CHALLANS (5 BUTTON HUB)
+    if (currentView == "GO_CHALLAN_SALE" || currentView == "GO_CHALLAN_PUR" || currentView == "GO_CHALLAN_SALE_REG" || currentView == "GO_CHALLAN_PUR_REG" || currentView == "CHALLANS") {
+      int tabIdx = 0;
+      if (currentView == "GO_CHALLAN_PUR") tabIdx = 1;
+      if (currentView == "GO_CHALLAN_SALE_REG") tabIdx = 3;
+      if (currentView == "GO_CHALLAN_PUR_REG") tabIdx = 4;
+
+      return WebChallanView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+        initialTabIndex: tabIdx,
+      );
+    }
+
+    // 8. ACCOUNTS, DAYBOOK & VOUCHERS
+    if (currentView == "GO_RECEIPT" || currentView == "GO_PAYMENT" || currentView == "GO_DAYBOOK" || currentView == "GO_LEDGERS" || currentView == "ACCOUNTS") {
+      int tabIdx = 0;
+      if (currentView == "GO_PAYMENT") tabIdx = 1;
+      if (currentView == "GO_DAYBOOK" || currentView == "GO_LEDGERS") tabIdx = 2;
+
+      return WebVoucherView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+        initialTabIndex: tabIdx,
+      );
+    }
+
+    // 9. PRODUCT / ITEM MASTER
+    if (currentView == "GO_M_ITEM" || currentView == "GO_STOCK" || currentView == "GO_SHORTAGE" || currentView == "INVENTORY") {
+      return WebProductMasterView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+      );
+    }
+
+    // 10. PARTY & CUSTOMER MASTER
+    if (currentView == "GO_M_PARTY") {
+      return WebPartyMasterView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+      );
+    }
+
+    // 11. CENTRAL BATCH MASTER
+    if (currentView == "GO_M_BATCH") {
+      return WebBatchMasterView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+      );
+    }
+
+    // 12. AUXILIARY MASTERS (COMPANIES, SALTS, ROUTES)
+    if (currentView == "GO_M_COMP" || currentView == "GO_M_SALT" || currentView == "GO_M_ROUTE") {
+      int tabIdx = 0;
+      if (currentView == "GO_M_SALT") tabIdx = 1;
+      if (currentView == "GO_M_ROUTE") tabIdx = 2;
+
+      return WebAuxMastersView(
+        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+        initialTabIndex: tabIdx,
+      );
+    }
+
+    // DEFAULT: DASHBOARD LEVEL 0 / LEVEL 1 HUBS GRID
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        WebKpiStrip(webPh: webPh),
+        const SizedBox(height: 20),
+        WebModuleGrid(
+          currentView: currentView,
+          onHubTap: _navigateToHub,
+          onActionTap: _handleActionTap,
+          onBackToHome: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+        ),
+        const SizedBox(height: 25),
+        if (currentView == "HOME")
+          WebInvoiceFeed(
+            webPh: webPh,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBreadcrumbs() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+            child: const Row(
+              children: [
+                Icon(Icons.home_rounded, color: Color(0xFF38BDF8), size: 15),
+                SizedBox(width: 6),
+                Text("Home", style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          if (currentView != "HOME") ...[
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 15),
+            const SizedBox(width: 8),
+            Text(currentViewTitle, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900)),
+          ],
+          const Spacer(),
+          if (currentView != "HOME")
+            InkWell(
+              onTap: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
+              child: const Row(
+                children: [
+                  Icon(Icons.arrow_back_rounded, color: Colors.white54, size: 14),
+                  SizedBox(width: 4),
+                  Text("Back to Hubs", style: TextStyle(color: Colors.white54, fontSize: 10.5, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+GATEWAY_EOF
+
+# 4. Strict Analyzer Verification (0 Errors)
+echo -e "${YELLOW}[4/5] Running strict static analyzer on lib/web_live_sync/...${NC}"
+flutter analyze lib/web_live_sync/
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}✖ Analyzer error! Please fix before deploy.${NC}"
+    exit 1
+fi
+echo -e "  ${GREEN}✔ 0 errors found in all Web Modules!${NC}\n"
+
+# 5. Compile Web & Upload to Cloudflare Pages
+echo -e "${YELLOW}[5/5] Compiling & Deploying Web Workstation...${NC}"
+pkill -f "analysis_server" 2>/dev/null || true
+pkill -f "dart_language_server" 2>/dev/null || true
+sync
+echo 3 | sudo tee /proc/sys/vm/drop_caches 2>/dev/null || true
+
+flutter build web -t lib/web_live_sync/web_main.dart --release --base-href "/" --pwa-strategy=none --no-tree-shake-icons --dart2js-optimization=O1
+
+npx wrangler pages deploy build/web --project-name=pharoah-erp --commit-dirty=true
+
+git add .
+git commit -m "Deploy 5-Button Challans Hub with 1:1 App Parity" || true
+git push origin main || true
+
+echo -e "\n${BLUE}====================================================${NC}"
+echo -e "${GREEN}  🎉 5 CHALLAN BUTTONS DEPLOYED SUCCESSFULLY!${NC}"
+echo -e "${GREEN}  🌐 LIVE AT: https://pharoah-erp.pages.dev${NC}"
+echo -e "${BLUE}====================================================${NC}"

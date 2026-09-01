@@ -40,28 +40,28 @@ class WebModulesRegistry {
     WebHubItem(
       id: "BILLING",
       title: "BILLING & SALES",
-      subtitle: "Invoicing, Purchases & Stitcher",
+      subtitle: "Invoicing, Purchases & Registers",
       icon: Icons.receipt_long_rounded,
       color: Color(0xFF2563EB),
       subActions: [
         WebActionItem(key: "GO_SALE", title: "New Sale Bill", subtitle: "Standard Outward Tax Invoice", icon: Icons.add_shopping_cart, color: Color(0xFF2563EB)),
         WebActionItem(key: "GO_PURCHASE", title: "Purchase Inward", subtitle: "Stock Inward Invoicing", icon: Icons.downloading_rounded, color: Color(0xFFEA580C)),
-        WebActionItem(key: "GO_STITCHER", title: "Challan to Bill Stitcher", subtitle: "Batch Convert Delivery Notes", icon: Icons.auto_fix_high_rounded, color: Color(0xFF0D9488)),
         WebActionItem(key: "GO_SALE_REG", title: "Sale Register", subtitle: "Outward Bills Summary & Audit", icon: Icons.description_outlined, color: Color(0xFF3B82F6)),
         WebActionItem(key: "GO_PUR_REG", title: "Purchase Register", subtitle: "Inward Tax Register & Summary", icon: Icons.history_rounded, color: Color(0xFFB45309)),
       ],
     ),
 
-    // 2. CHALLANS
+    // 2. DELIVERY CHALLANS (5 EXACT BUTTONS)
     WebHubItem(
       id: "CHALLANS",
       title: "DELIVERY CHALLANS",
-      subtitle: "Inward/Outward Notes & Registers",
+      subtitle: "Inward/Outward Notes, Stitcher & Registers",
       icon: Icons.local_shipping_rounded,
       color: Color(0xFF0F766E),
       subActions: [
         WebActionItem(key: "GO_CHALLAN_SALE", title: "Outward Sale Challan", subtitle: "Dispatch Delivery Note", icon: Icons.local_shipping_rounded, color: Color(0xFF0F766E)),
         WebActionItem(key: "GO_CHALLAN_PUR", title: "Inward Purchase Challan", subtitle: "Stock Inward Receipt Note", icon: Icons.inventory_2_rounded, color: Color(0xFFD97706)),
+        WebActionItem(key: "GO_STITCHER", title: "Challan to Bill Converter", subtitle: "Stitch Pending Challans to Invoice", icon: Icons.auto_fix_high_rounded, color: Color(0xFF2DD4BF)),
         WebActionItem(key: "GO_CHALLAN_SALE_REG", title: "Sale Challans Register", subtitle: "Track Pending Deliveries", icon: Icons.list_alt_rounded, color: Color(0xFF4338CA)),
         WebActionItem(key: "GO_CHALLAN_PUR_REG", title: "Purchase Challans Register", subtitle: "Audit Inward Dispatches", icon: Icons.history_edu_rounded, color: Color(0xFFB45309)),
       ],
