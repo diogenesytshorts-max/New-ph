@@ -1,4 +1,5 @@
 import 'web_sale_challan_view.dart';
+import 'web_purchase_challan_view.dart';
 // FILE: lib/web_live_sync/sub_views/web_challans/web_challan_hub.dart
 
 import 'package:flutter/material.dart';
@@ -78,7 +79,7 @@ class WebChallanHub extends StatelessWidget {
                     icon: Icons.inventory_2_rounded,
                     color: Colors.orange,
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Proceeding to Step 2: Pur Challan Entry...")));
+                      Navigator.push(context, MaterialPageRoute(builder: (c) => const WebPurchaseChallanView()));
                     },
                   ),
                   _appModuleCard(
