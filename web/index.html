@@ -4,7 +4,7 @@
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -13,7 +13,6 @@
 </head>
 <body style="background-color: #0F172A; margin: 0; padding: 0;">
   <script>
-    // 1. Force unregister all legacy service workers
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for (let registration of registrations) {
@@ -21,7 +20,6 @@
         }
       });
     }
-    // 2. Force delete all browser cache storage
     if ('caches' in window) {
       caches.keys().then(function(names) {
         for (let name of names) {
@@ -29,7 +27,6 @@
         }
       });
     }
-    // 3. Dynamically inject flutter_bootstrap.js with unique timestamp to guarantee 100% fresh load
     var script = document.createElement('script');
     script.src = 'flutter_bootstrap.js?v=' + new Date().getTime();
     script.async = true;

@@ -92,44 +92,46 @@ class _QuickAddProductModalState extends State<QuickAddProductModal> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dialogWidth = screenWidth > 620 ? 580.0 : (screenWidth * 0.94);
+
     return AlertDialog(
       backgroundColor: const Color(0xFF1E293B),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: Colors.white12),
       ),
-      titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      titlePadding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       title: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(7),
             decoration: const BoxDecoration(
               color: Color(0x337C3AED),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.add_box_rounded, color: Color(0xFFA78BFA), size: 20),
+            child: const Icon(Icons.add_box_rounded, color: Color(0xFFA78BFA), size: 18),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           const Text(
-            "QUICK ADD MEDICINE / PRODUCT",
-            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+            "QUICK ADD PRODUCT",
+            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
           ),
         ],
       ),
       content: SizedBox(
-        width: 600,
+        width: dialogWidth,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 5),
               _ipadInput("PRODUCT / DRUG NAME *", nameC, Icons.medication, isCaps: true),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(flex: 3, child: _ipadInput("PACKING *", packC, Icons.inventory, isCaps: true)),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     flex: 2,
                     child: _ipadDropdown(
@@ -141,7 +143,7 @@ class _QuickAddProductModalState extends State<QuickAddProductModal> {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -150,47 +152,47 @@ class _QuickAddProductModalState extends State<QuickAddProductModal> {
                       selectedCompanyId,
                       widget.webPh.companies.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
                       (v) => setState(() => selectedCompanyId = v),
-                      hint: "Select Brand (Optional)",
+                      hint: "Select Brand",
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: _ipadDropdown(
                       "SALT COMPOSITION",
                       selectedSaltId,
                       widget.webPh.salts.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
                       (v) => setState(() => selectedSaltId = v),
-                      hint: "Select Salt (Optional)",
+                      hint: "Select Salt",
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(child: _ipadInput("HSN CODE", hsnC, Icons.tag, isCaps: true)),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(child: _ipadInput("GST %", gstC, Icons.percent, isNum: true)),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(child: _ipadInput("MRP ₹", mrpC, Icons.currency_rupee, isNum: true)),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(child: _ipadInput("PUR. RATE ₹", purRateC, Icons.shopping_cart, isNum: true)),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(child: _ipadInput("SALE RATE A ₹", rateAC, Icons.sell, isNum: true)),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: SwitchListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
-                      title: const Text("Schedule H1", style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                      title: const Text("Schedule H1", style: TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.bold)),
                       value: isScheduleH1,
                       activeColor: const Color(0xFF38BDF8),
                       onChanged: (v) => setState(() => isScheduleH1 = v),
@@ -200,7 +202,7 @@ class _QuickAddProductModalState extends State<QuickAddProductModal> {
                     child: SwitchListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
-                      title: const Text("Narcotic (NDPS)", style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                      title: const Text("Narcotic (NDPS)", style: TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.bold)),
                       value: isNarcotic,
                       activeColor: Colors.redAccent,
                       onChanged: (v) => setState(() => isNarcotic = v),
@@ -208,7 +210,6 @@ class _QuickAddProductModalState extends State<QuickAddProductModal> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
             ],
           ),
         ),
@@ -222,11 +223,11 @@ class _QuickAddProductModalState extends State<QuickAddProductModal> {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF2563EB),
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           onPressed: _saveProduct,
-          child: const Text("SAVE & SELECT PRODUCT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          child: const Text("SAVE PRODUCT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5)),
         ),
       ],
     );
@@ -244,31 +245,31 @@ class _QuickAddProductModalState extends State<QuickAddProductModal> {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white60, fontSize: 9.5, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          style: const TextStyle(color: Colors.white60, fontSize: 8.5, fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         Container(
-          height: 44,
+          height: 40,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             color: Colors.black38,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.white12),
           ),
           child: Row(
             children: [
-              Icon(icon, color: const Color(0xFFA78BFA), size: 16),
-              const SizedBox(width: 10),
+              Icon(icon, color: const Color(0xFFA78BFA), size: 15),
+              const SizedBox(width: 8),
               Expanded(
                 child: TextField(
                   controller: ctrl,
                   keyboardType: isNum ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
                   textCapitalization: isCaps ? TextCapitalization.characters : TextCapitalization.none,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.5),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                   decoration: const InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 12),
+                    contentPadding: EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ),
@@ -291,15 +292,15 @@ class _QuickAddProductModalState extends State<QuickAddProductModal> {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white60, fontSize: 9.5, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          style: const TextStyle(color: Colors.white60, fontSize: 8.5, fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         Container(
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             color: Colors.black38,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.white12),
           ),
           child: DropdownButtonHideUnderline(
@@ -307,10 +308,10 @@ class _QuickAddProductModalState extends State<QuickAddProductModal> {
               value: value,
               isExpanded: true,
               dropdownColor: const Color(0xFF1E293B),
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold),
               items: items,
               onChanged: onChanged,
-              hint: hint.isNotEmpty ? Text(hint, style: const TextStyle(color: Colors.white38, fontSize: 11)) : null,
+              hint: hint.isNotEmpty ? Text(hint, style: const TextStyle(color: Colors.white38, fontSize: 10.5)) : null,
             ),
           ),
         ),

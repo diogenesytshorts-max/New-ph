@@ -119,6 +119,8 @@ class _QuickAddPartyModalState extends State<QuickAddPartyModal> {
   @override
   Widget build(BuildContext context) {
     final activeSeries = widget.webPh.numberingSeries.where((s) => s.type == "SALE" && s.isActive).toList();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dialogWidth = screenWidth > 640 ? 600.0 : (screenWidth * 0.94);
 
     return AlertDialog(
       backgroundColor: const Color(0xFF1E293B),
@@ -126,34 +128,33 @@ class _QuickAddPartyModalState extends State<QuickAddPartyModal> {
         borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: Colors.white12),
       ),
-      titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      titlePadding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       title: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(7),
             decoration: const BoxDecoration(
               color: Color(0x332563EB),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.person_add_alt_1_rounded, color: Color(0xFF38BDF8), size: 20),
+            child: const Icon(Icons.person_add_alt_1_rounded, color: Color(0xFF38BDF8), size: 18),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           const Text(
             "QUICK CREATE CUSTOMER / PARTY",
-            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
           ),
         ],
       ),
       content: SizedBox(
-        width: 620,
+        width: dialogWidth,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 5),
               _ipadInput("FIRM / CUSTOMER NAME *", nameC, Icons.business, isCaps: true),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -164,7 +165,7 @@ class _QuickAddPartyModalState extends State<QuickAddPartyModal> {
                       (v) => setState(() => selectedGroup = v!),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: _ipadDropdown(
                       "STATE (FOR GST)",
@@ -175,35 +176,35 @@ class _QuickAddPartyModalState extends State<QuickAddPartyModal> {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(child: _ipadInput("MOBILE NUMBER", phoneC, Icons.phone, isPhone: true)),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(child: _ipadInput("EMAIL ID", emailC, Icons.email)),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(child: _ipadInput("GSTIN NUMBER", gstC, Icons.receipt_long, isCaps: true)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _ipadInput("PAN (AUTO FROM GST)", panC, Icons.badge_outlined, isCaps: true)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _ipadInput("PAN (AUTO)", panC, Icons.badge_outlined, isCaps: true)),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(child: _ipadInput("DRUG LICENSE (DL)", dlC, Icons.medical_services, isCaps: true)),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(child: _ipadInput("DL EXPIRY", dlExpC, Icons.event_busy, isCaps: true)),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(child: _ipadInput("CITY", cityC, Icons.location_city, isCaps: true)),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: _ipadDropdown(
                       "PRICING LEVEL",
@@ -214,20 +215,20 @@ class _QuickAddPartyModalState extends State<QuickAddPartyModal> {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               _ipadInput("OFFICE / SHOP ADDRESS", addressC, Icons.location_on),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _ipadInput("OPENING BALANCE ₹", opBalC, Icons.account_balance_wallet, isNum: true)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _ipadInput("CREDIT LIMIT ₹", creditLimitC, Icons.speed, isNum: true)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _ipadInput("CREDIT DAYS", creditDaysC, Icons.timer, isNum: true)),
+                  Expanded(child: _ipadInput("OPENING BAL ₹", opBalC, Icons.account_balance_wallet, isNum: true)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _ipadInput("LIMIT ₹", creditLimitC, Icons.speed, isNum: true)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _ipadInput("DAYS", creditDaysC, Icons.timer, isNum: true)),
                 ],
               ),
               if (activeSeries.isNotEmpty) ...[
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 _ipadDropdown(
                   "DEFAULT BILLING SERIES PREFERENCE",
                   selectedSeriesId.isEmpty ? null : selectedSeriesId,
@@ -236,7 +237,6 @@ class _QuickAddPartyModalState extends State<QuickAddPartyModal> {
                   hint: "Select Default Series (Optional)",
                 ),
               ],
-              const SizedBox(height: 10),
             ],
           ),
         ),
@@ -250,11 +250,11 @@ class _QuickAddPartyModalState extends State<QuickAddPartyModal> {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF2563EB),
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           onPressed: _saveParty,
-          child: const Text("SAVE & SELECT CUSTOMER", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          child: const Text("SAVE CUSTOMER", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5)),
         ),
       ],
     );
@@ -273,31 +273,31 @@ class _QuickAddPartyModalState extends State<QuickAddPartyModal> {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white60, fontSize: 9.5, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          style: const TextStyle(color: Colors.white60, fontSize: 8.5, fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         Container(
-          height: 44,
+          height: 40,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             color: Colors.black38,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.white12),
           ),
           child: Row(
             children: [
-              Icon(icon, color: const Color(0xFF38BDF8), size: 16),
-              const SizedBox(width: 10),
+              Icon(icon, color: const Color(0xFF38BDF8), size: 15),
+              const SizedBox(width: 8),
               Expanded(
                 child: TextField(
                   controller: ctrl,
                   keyboardType: isPhone ? TextInputType.phone : (isNum ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text),
                   textCapitalization: isCaps ? TextCapitalization.characters : TextCapitalization.none,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.5),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                   decoration: const InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 12),
+                    contentPadding: EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ),
@@ -320,15 +320,15 @@ class _QuickAddPartyModalState extends State<QuickAddPartyModal> {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white60, fontSize: 9.5, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          style: const TextStyle(color: Colors.white60, fontSize: 8.5, fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         Container(
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             color: Colors.black38,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.white12),
           ),
           child: DropdownButtonHideUnderline(
@@ -336,10 +336,10 @@ class _QuickAddPartyModalState extends State<QuickAddPartyModal> {
               value: value,
               isExpanded: true,
               dropdownColor: const Color(0xFF1E293B),
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold),
               items: items,
               onChanged: onChanged,
-              hint: hint.isNotEmpty ? Text(hint, style: const TextStyle(color: Colors.white38, fontSize: 11)) : null,
+              hint: hint.isNotEmpty ? Text(hint, style: const TextStyle(color: Colors.white38, fontSize: 10.5)) : null,
             ),
           ),
         ),

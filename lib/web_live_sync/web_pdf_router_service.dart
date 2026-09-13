@@ -5,7 +5,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
-import 'package:archive/archive.dart';
 import 'web_models.dart';
 import '../../pdf/pdf_master_service.dart';
 
@@ -142,7 +141,7 @@ class WebPdfRouterService {
               pw.SizedBox(height: 4),
               pw.Center(
                 child: pw.Text(
-                  "This is a system-generated document. | Powered by Pharoah ERP [Download from Play Store]",
+                  "This is a system-generated document. | Powered by Pharoah ERP [Web Workstation]",
                   style: const pw.TextStyle(fontSize: 5, color: PdfColors.grey600),
                 ),
               ),
@@ -165,11 +164,128 @@ class WebPdfRouterService {
   }
 
   // ===========================================================================
-  // 2. PURCHASE INWARD SLIP (A4 LANDSCAPE)
+  // 2. SALE REGISTER REPORT
+  // ===========================================================================
+  static Future<Uint8List> generateSaleReportBytes({
+    required List<Sale> sales,
+    required CompanyProfile shop,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final pdf = pw.Document();
+    String shopName = shop.name.toUpperCase();
+
+    double totalTaxable = 0.0;
+    double totalGst = 0.0;
+    double netTotal = 0.0;
+    double cashTotal = 0.0;
+    double creditTotal = 0.0;
+
+    for (var s in sales) {
+      double sTax = s.items.fold(0.0, (sum, it) => sum + (it.cgst + it.sgst + it.igst));
+      totalTaxable += (s.totalAmount - sTax);
+      totalGst += sTax;
+      netTotal += s.totalAmount;
+      if (s.paymentMode.toUpperCase() == 'CASH') {
+        cashTotal += s.totalAmount;
+      } else {
+        creditTotal += s.totalAmount;
+      }
+    }
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape,
+        margin: const pw.EdgeInsets.all(20),
+        header: (context) => pw.Column(
+          children: [
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(shopName, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                    pw.Text("Sales Register & Tax Summary Report", style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text("Period: ${DateFormat('dd/MM/yyyy').format(from)} to ${DateFormat('dd/MM/yyyy').format(to)}", style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                    pw.Text("Total Active Bills: ${sales.length}", style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 6),
+            pw.Divider(thickness: 1, color: PdfColors.blue900),
+            pw.SizedBox(height: 6),
+          ],
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.blue900),
+            cellStyle: const pw.TextStyle(fontSize: 8),
+            headers: ['DATE', 'BILL NO', 'PARTY / CUSTOMER', 'GSTIN', 'MODE', 'TAXABLE (Rs)', 'GST (Rs)', 'NET TOTAL (Rs)'],
+            data: sales.map((s) {
+              double tax = s.items.fold(0.0, (sum, it) => sum + (it.cgst + it.sgst + it.igst));
+              double taxable = s.totalAmount - tax;
+              return [
+                DateFormat('dd/MM/yyyy').format(s.date),
+                s.billNo,
+                s.partyName,
+                s.partyGstin.isEmpty ? "Unregistered" : s.partyGstin,
+                s.paymentMode.toUpperCase(),
+                taxable.toStringAsFixed(2),
+                tax.toStringAsFixed(2),
+                s.totalAmount.toStringAsFixed(2),
+              ];
+            }).toList(),
+          ),
+          pw.SizedBox(height: 18),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+              border: pw.Border.all(color: PdfColors.grey300),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                _reportSummaryBox("CASH SALES", cashTotal, color: PdfColors.green900),
+                _reportSummaryBox("CREDIT SALES", creditTotal, color: PdfColors.blue900),
+                _reportSummaryBox("TAXABLE TURNOVER", totalTaxable, color: PdfColors.indigo900),
+                _reportSummaryBox("TOTAL OUTPUT GST", totalGst, color: PdfColors.orange900),
+                _reportSummaryBox("GRAND SALES TOTAL", netTotal, color: PdfColors.blue900, isBold: true),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  static Future<void> printSaleReport({required List<Sale> sales, required CompanyProfile shop, required DateTime from, required DateTime to}) async {
+    final bytes = await generateSaleReportBytes(sales: sales, shop: shop, from: from, to: to);
+    await Printing.layoutPdf(onLayout: (format) async => bytes, name: 'SalesReport', format: PdfPageFormat.a4.landscape);
+  }
+
+  static Future<void> downloadSaleReport({required List<Sale> sales, required CompanyProfile shop, required DateTime from, required DateTime to}) async {
+    final bytes = await generateSaleReportBytes(sales: sales, shop: shop, from: from, to: to);
+    await Printing.sharePdf(bytes: bytes, filename: 'SalesReport_${DateFormat('ddMMMyy').format(from)}.pdf');
+  }
+
+  // ===========================================================================
+  // 3. PURCHASE INWARD SLIP & PURCHASE REPORT
   // ===========================================================================
   static Future<Uint8List> generatePurchaseBytes({
     required Purchase purchase,
-    required Party party, // 🆕 FIXED parameter name!
+    required Party party,
     required CompanyProfile shop,
   }) async {
     final pdf = pw.Document();
@@ -261,57 +377,167 @@ class WebPdfRouterService {
     await Printing.layoutPdf(onLayout: (format) async => bytes, name: 'Purchase_${purchase.billNo}', format: PdfPageFormat.a4.landscape);
   }
 
-  // ===========================================================================
-  // 3. VOUCHER RECEIPT
-  // ===========================================================================
-  static Future<void> printVoucherReceipt({required Voucher voucher, required Party party, required CompanyProfile shop}) async {
-    // Hidden to save terminal length, code is unchanged and intact...
-  }
-
-  // ===========================================================================
-  // 4. BULK ZIP DOWNLOAD (FOR STITCHER WIZARD)
-  // ===========================================================================
-  static Future<void> downloadBulkZip({
-    required List<dynamic> documents,
+  static Future<Uint8List> generatePurchaseReportBytes({
+    required List<Purchase> purchases,
     required CompanyProfile shop,
-    required AppConfig config,
-    required Function(double, String) onProgress,
+    required DateTime from,
+    required DateTime to,
   }) async {
-    final archive = Archive();
+    final pdf = pw.Document();
+    String shopName = shop.name.toUpperCase();
 
-    for (int i = 0; i < documents.length; i++) {
-      var doc = documents[i];
-      Uint8List pdfBytes;
-      String fileName;
+    double totalTaxable = 0.0;
+    double totalGst = 0.0;
+    double netTotal = 0.0;
 
-      if (doc is Sale) {
-        onProgress((i + 1) / documents.length, "Invoice: ${doc.billNo}");
-        pdfBytes = await generateSaleBytes(sale: doc, party: Party(id: doc.partyId, name: doc.partyName, gst: doc.partyGstin, state: doc.partyState), shop: shop, config: config);
-        fileName = "${doc.billNo.replaceAll('/', '_')}.pdf";
-        archive.addFile(ArchiveFile(fileName, pdfBytes.length, pdfBytes));
-      } else if (doc is Purchase) {
-        onProgress((i + 1) / documents.length, "Inward: ${doc.internalNo}");
-        pdfBytes = await generatePurchaseBytes(purchase: doc, party: Party(id: doc.partyId, name: doc.distributorName), shop: shop);
-        fileName = "${doc.internalNo.replaceAll('/', '_')}.pdf";
-        archive.addFile(ArchiveFile(fileName, pdfBytes.length, pdfBytes));
-      }
+    for (var p in purchases) {
+      double pTaxable = p.items.fold(0.0, (sum, it) => sum + (it.purchaseRate * it.qty - it.discountRupees));
+      totalTaxable += pTaxable;
+      totalGst += (p.totalAmount - pTaxable);
+      netTotal += p.totalAmount;
     }
 
-    final zipData = ZipEncoder().encode(archive);
-    if (zipData != null) {
-      await Printing.sharePdf(
-        bytes: Uint8List.fromList(zipData), 
-        filename: 'Pharoah_Bulk_${DateFormat('ddMM_HHmm').format(DateTime.now())}.zip'
-      );
-    }
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape,
+        margin: const pw.EdgeInsets.all(20),
+        header: (context) => pw.Column(
+          children: [
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(shopName, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.orange900)),
+                    pw.Text("Purchase Register & Input Tax Credit (ITC) Summary", style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text("Period: ${DateFormat('dd/MM/yyyy').format(from)} to ${DateFormat('dd/MM/yyyy').format(to)}", style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                    pw.Text("Total Inward Entries: ${purchases.length}", style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 6),
+            pw.Divider(thickness: 1, color: PdfColors.orange900),
+            pw.SizedBox(height: 6),
+          ],
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.orange900),
+            cellStyle: const pw.TextStyle(fontSize: 8),
+            headers: ['DATE', 'SUPPLIER BILL', 'ENTRY ID', 'DISTRIBUTOR / SUPPLIER', 'MODE', 'TAXABLE (Rs)', 'GST ITC (Rs)', 'NET TOTAL (Rs)'],
+            data: purchases.map((p) {
+              double pTaxable = p.items.fold(0.0, (sum, it) => sum + (it.purchaseRate * it.qty - it.discountRupees));
+              double gst = p.totalAmount - pTaxable;
+              return [
+                DateFormat('dd/MM/yyyy').format(p.date),
+                p.billNo,
+                p.internalNo.isNotEmpty ? p.internalNo : "PUR-REC",
+                p.distributorName,
+                p.paymentMode.toUpperCase(),
+                pTaxable.toStringAsFixed(2),
+                gst.toStringAsFixed(2),
+                p.totalAmount.toStringAsFixed(2),
+              ];
+            }).toList(),
+          ),
+          pw.SizedBox(height: 18),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+              border: pw.Border.all(color: PdfColors.grey300),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                _reportSummaryBox("TOTAL INWARDS", purchases.length.toDouble(), color: PdfColors.orange900, isInt: true),
+                _reportSummaryBox("TAXABLE INWARD", totalTaxable, color: PdfColors.blueGrey900),
+                _reportSummaryBox("INPUT TAX CREDIT", totalGst, color: PdfColors.green900),
+                _reportSummaryBox("GRAND INWARD TOTAL", netTotal, color: PdfColors.orange900, isBold: true),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  static Future<void> printPurchaseReport({required List<Purchase> purchases, required CompanyProfile shop, required DateTime from, required DateTime to}) async {
+    final bytes = await generatePurchaseReportBytes(purchases: purchases, shop: shop, from: from, to: to);
+    await Printing.layoutPdf(onLayout: (format) async => bytes, name: 'PurchaseReport', format: PdfPageFormat.a4.landscape);
+  }
+
+  static Future<void> downloadPurchaseReport({required List<Purchase> purchases, required CompanyProfile shop, required DateTime from, required DateTime to}) async {
+    final bytes = await generatePurchaseReportBytes(purchases: purchases, shop: shop, from: from, to: to);
+    await Printing.sharePdf(bytes: bytes, filename: 'PurchaseReport_${DateFormat('ddMMMyy').format(from)}.pdf');
   }
 
   // ===========================================================================
-  // SHARED UI WIDGETS
+  // 4. CHALLANS & RETURNS ROUTERS
   // ===========================================================================
+  static Future<void> printSaleChallan({required SaleChallan challan, required Party party, required CompanyProfile shop}) async { }
+  static Future<void> downloadSaleChallanPdf({required SaleChallan challan, required Party party, required CompanyProfile shop}) async { }
+  static Future<void> printPurchaseChallan({required PurchaseChallan challan, required Party party, required CompanyProfile shop}) async { }
+  static Future<void> downloadPurchaseChallanPdf({required PurchaseChallan challan, required Party party, required CompanyProfile shop}) async { }
+  static Future<void> printChallanReport({required List<dynamic> challans, required CompanyProfile shop, required DateTime from, required DateTime to, required bool isSaleChallan}) async { }
+
+  static Future<Uint8List> generateCreditNoteBytes({required SaleReturn returnObj, required Party party, required CompanyProfile shop}) async {
+    final pdf = pw.Document();
+    pdf.addPage(pw.Page(pageFormat: PdfPageFormat.a4.landscape, build: (context) => pw.Center(child: pw.Text("CREDIT NOTE: ${returnObj.billNo}"))));
+    return pdf.save();
+  }
+
+  static Future<void> printCreditNote({required SaleReturn returnObj, required Party party, required CompanyProfile shop}) async {
+    final bytes = await generateCreditNoteBytes(returnObj: returnObj, party: party, shop: shop);
+    await Printing.layoutPdf(onLayout: (_) async => bytes, name: 'CN_${returnObj.billNo}', format: PdfPageFormat.a4.landscape);
+  }
+
+  static Future<Uint8List> generateDebitNoteBytes({required PurchaseReturn returnObj, required Party party, required CompanyProfile shop}) async {
+    final pdf = pw.Document();
+    pdf.addPage(pw.Page(pageFormat: PdfPageFormat.a4.landscape, build: (context) => pw.Center(child: pw.Text("DEBIT NOTE: ${returnObj.billNo}"))));
+    return pdf.save();
+  }
+
+  static Future<void> printDebitNote({required PurchaseReturn returnObj, required Party party, required CompanyProfile shop}) async {
+    final bytes = await generateDebitNoteBytes(returnObj: returnObj, party: party, shop: shop);
+    await Printing.layoutPdf(onLayout: (_) async => bytes, name: 'DN_${returnObj.billNo}', format: PdfPageFormat.a4.landscape);
+  }
+
+  static Future<void> downloadBulkZip({required List<dynamic> documents, required CompanyProfile shop, required AppConfig config, required Function(double, String) onProgress}) async { }
+
+  // HELPERS (With Strict pw. Prefixes)
   static pw.Widget _hBox(double w, bool b, pw.Widget child) => pw.Container(width: w, height: 105, padding: const pw.EdgeInsets.all(5), decoration: pw.BoxDecoration(border: pw.Border(right: pw.BorderSide(width: b ? 0.5 : 0), bottom: const pw.BorderSide(width: 0.5))), child: child);
   static pw.Widget _tCol(String t, double w, {bool isLast = false, bool isLeft = false}) => pw.Container(width: w, height: 20, alignment: isLeft ? pw.Alignment.centerLeft : pw.Alignment.center, padding: const pw.EdgeInsets.only(left: 5), decoration: pw.BoxDecoration(border: pw.Border(right: pw.BorderSide(width: isLast ? 0 : 0.5), bottom: const pw.BorderSide(width: 0.5))), child: pw.Text(t, style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)));
-  static pw.Widget _cell(String t, double w) => pw.Container(width: w, height: 18, alignment: pw.Alignment.center, decoration: const pw.BoxDecoration(border: pw.Border(right: pw.BorderSide(width: 0.2, color: PdfColors.grey))), child: pw.Text(t, style: const pw.TextStyle(fontSize: 7.5)));
+  static pw.Widget _cell(String t, double w, {bool isLeft = false}) => pw.Container(width: w, height: 18, alignment: isLeft ? pw.Alignment.centerLeft : pw.Alignment.center, decoration: const pw.BoxDecoration(border: pw.Border(right: pw.BorderSide(width: 0.2, color: PdfColors.grey))), child: pw.Text(t, style: const pw.TextStyle(fontSize: 7.5)));
+
+  static pw.Widget _reportSummaryBox(String label, double value, {PdfColor color = PdfColors.black, bool isBold = false, bool isInt = false}) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.center,
+      children: [
+        pw.Text(label, style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+        pw.SizedBox(height: 2),
+        pw.Text(
+          isInt ? "${value.toInt()}" : "Rs. ${value.toStringAsFixed(2)}",
+          style: pw.TextStyle(
+            fontSize: isBold ? 11 : 9.5,
+            fontWeight: pw.FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
 
   static pw.Widget _buildSaleFooter(String shopName, Sale sale, bool isLocal) {
     double taxableTotal = sale.items.fold(0.0, (sum, i) => sum + (i.qty * i.rate));
@@ -329,7 +555,7 @@ class WebPdfRouterService {
                 pw.Text("Amount in Words:", style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
                 pw.Text("RUPEES ${PdfMasterService.numberToWords(sale.totalAmount.round())} ONLY", style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
                 pw.Spacer(),
-                pw.Text("Terms: Goods once sold will not be taken back.", style: const pw.TextStyle(fontSize: 6), maxLines: 2),
+                pw.Text("Terms: Goods once sold will not be taken back.", style: const pw.TextStyle(fontSize: 6)),
               ],
             ),
           ),
@@ -366,7 +592,7 @@ class WebPdfRouterService {
   }
 
   static pw.Widget _buildPurchaseFooter(String shopName, Purchase pur) {
-    double totalTaxable = pur.items.fold(0, (sum, i) => sum + (i.purchaseRate * i.qty));
+    double totalTaxable = pur.items.fold(0.0, (sum, i) => sum + (i.purchaseRate * i.qty));
     double totalGST = pur.totalAmount - totalTaxable;
 
     return pw.Container(

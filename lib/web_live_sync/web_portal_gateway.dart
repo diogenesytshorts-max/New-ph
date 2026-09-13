@@ -12,7 +12,9 @@ import 'components/web_login_card.dart';
 
 // Sub Views
 import 'sub_views/web_billing/web_new_sale_view.dart';
+import 'web_sale_summary_view.dart';
 import 'web_purchase_entry_view.dart';
+import 'web_purchase_summary_view.dart';
 import 'web_challan_stitcher_wizard.dart';
 import 'web_returns_view.dart';
 import 'web_challan_view.dart';
@@ -91,7 +93,9 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
       );
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
     bool isHomeDashboard = currentView == "HOME";
+    bool showSidebar = isHomeDashboard && screenWidth > 900;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B132B),
@@ -102,7 +106,7 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isHomeDashboard)
+          if (showSidebar)
             WebRecentSidebar(
               currentView: currentView,
               recentShortcuts: recentShortcuts,
@@ -114,12 +118,15 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
 
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth > 600 ? 18.0 : 10.0,
+                vertical: 14.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildBreadcrumbs(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   _buildCurrentView(webPh),
                 ],
               ),
@@ -131,119 +138,75 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
   }
 
   Widget _buildCurrentView(PharoahWebManager webPh) {
-    // A. SALES INVOICING
     if (currentView == "GO_SALE") {
-      return WebNewSaleView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebNewSaleView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // B. PURCHASE INWARD & PURCHASE REGISTER
-    if (currentView == "GO_PURCHASE" || currentView == "GO_PUR_REG") {
-      return WebPurchaseEntryView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+    if (currentView == "GO_SALE_REG") {
+      return WebSaleSummaryView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // C. CHALLAN TO BILL STITCHER WIZARD
+    if (currentView == "GO_PURCHASE") {
+      return WebPurchaseEntryView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
+    }
+    if (currentView == "GO_PUR_REG") {
+      return WebPurchaseSummaryView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
+    }
     if (currentView == "GO_STITCHER") {
-      return WebChallanStitcherWizard(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebChallanStitcherWizard(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // D. RETURNS & REVERSALS (CN / DN / REGISTER)
     if (currentView == "GO_CN" || currentView == "GO_DN" || currentView == "GO_BREAKAGE" || currentView == "GO_RET_REG" || currentView == "RETURNS") {
       int tabIdx = 0;
       if (currentView == "GO_DN") tabIdx = 1;
       if (currentView == "GO_RET_REG") tabIdx = 2;
-
-      return WebReturnsView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-        initialTabIndex: tabIdx,
-      );
+      return WebReturnsView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"), initialTabIndex: tabIdx);
     }
-
-    // E. DELIVERY & INWARD CHALLANS
     if (currentView == "GO_CHALLAN_SALE" || currentView == "GO_CHALLAN_PUR" || currentView == "GO_CHALLAN_SALE_REG" || currentView == "GO_CHALLAN_PUR_REG" || currentView == "CHALLANS") {
       int tabIdx = 0;
       if (currentView == "GO_CHALLAN_PUR" || currentView == "GO_CHALLAN_PUR_REG") tabIdx = 1;
-
-      return WebChallanView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-        initialTabIndex: tabIdx,
-      );
+      return WebChallanView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"), initialTabIndex: tabIdx);
     }
-
-    // F. ACCOUNTS, DAYBOOK & VOUCHERS
     if (currentView == "GO_RECEIPT" || currentView == "GO_PAYMENT" || currentView == "GO_DAYBOOK" || currentView == "GO_LEDGERS" || currentView == "ACCOUNTS") {
       int tabIdx = 0;
       if (currentView == "GO_PAYMENT") tabIdx = 1;
       if (currentView == "GO_DAYBOOK" || currentView == "GO_LEDGERS") tabIdx = 2;
-
-      return WebVoucherView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-        initialTabIndex: tabIdx,
-      );
+      return WebVoucherView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"), initialTabIndex: tabIdx);
     }
-
-    // G. PRODUCT / ITEM MASTER
     if (currentView == "GO_M_ITEM" || currentView == "GO_STOCK" || currentView == "GO_SHORTAGE" || currentView == "INVENTORY") {
-      return WebProductMasterView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebProductMasterView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // H. PARTY & CUSTOMER MASTER
     if (currentView == "GO_M_PARTY") {
-      return WebPartyMasterView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebPartyMasterView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // I. CENTRAL BATCH MASTER
     if (currentView == "GO_M_BATCH") {
-      return WebBatchMasterView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-      );
+      return WebBatchMasterView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"));
     }
-
-    // J. AUXILIARY MASTERS (COMPANIES, SALTS, ROUTES)
     if (currentView == "GO_M_COMP" || currentView == "GO_M_SALT" || currentView == "GO_M_ROUTE") {
       int tabIdx = 0;
       if (currentView == "GO_M_SALT") tabIdx = 1;
       if (currentView == "GO_M_ROUTE") tabIdx = 2;
-
-      return WebAuxMastersView(
-        onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
-        initialTabIndex: tabIdx,
-      );
+      return WebAuxMastersView(onBack: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"), initialTabIndex: tabIdx);
     }
 
-    // DEFAULT: DASHBOARD LEVEL 0 / LEVEL 1 HUBS GRID
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         WebKpiStrip(webPh: webPh),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
         WebModuleGrid(
           currentView: currentView,
           onHubTap: _navigateToHub,
           onActionTap: _handleActionTap,
           onBackToHome: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
         ),
-        const SizedBox(height: 25),
+        const SizedBox(height: 20),
         if (currentView == "HOME")
-          WebInvoiceFeed(
-            webPh: webPh,
-          ),
+          WebInvoiceFeed(webPh: webPh),
       ],
     );
   }
 
   Widget _buildBreadcrumbs() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(10),
@@ -255,17 +218,23 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
             onTap: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
             child: const Row(
               children: [
-                Icon(Icons.home_rounded, color: Color(0xFF38BDF8), size: 15),
-                SizedBox(width: 6),
+                Icon(Icons.home_rounded, color: Color(0xFF38BDF8), size: 14),
+                SizedBox(width: 5),
                 Text("Home", style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
           if (currentView != "HOME") ...[
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 15),
-            const SizedBox(width: 8),
-            Text(currentViewTitle, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900)),
+            const SizedBox(width: 6),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 14),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                currentViewTitle,
+                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
           const Spacer(),
           if (currentView != "HOME")
@@ -273,9 +242,9 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
               onTap: () => _navigateToHub("HOME", "MAIN BUSINESS MODULES"),
               child: const Row(
                 children: [
-                  Icon(Icons.arrow_back_rounded, color: Colors.white54, size: 14),
+                  Icon(Icons.arrow_back_rounded, color: Colors.white54, size: 13),
                   SizedBox(width: 4),
-                  Text("Back to Hubs", style: TextStyle(color: Colors.white54, fontSize: 10.5, fontWeight: FontWeight.bold)),
+                  Text("Back", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),

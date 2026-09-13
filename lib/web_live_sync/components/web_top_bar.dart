@@ -18,9 +18,11 @@ class WebTopBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool isTight = MediaQuery.of(context).size.width < 700;
+
     return Container(
       height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: const BoxDecoration(
         color: Color(0xFF0F172A),
         border: Border(bottom: BorderSide(color: Colors.white10)),
@@ -35,7 +37,7 @@ class WebTopBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             child: const Icon(Icons.storefront_rounded, color: Color(0xFF38BDF8), size: 20),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,22 +46,23 @@ class WebTopBar extends StatelessWidget implements PreferredSizeWidget {
                 webPh.companyName.toUpperCase(),
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
-                  fontSize: 14,
+                  fontSize: 13,
                   color: Colors.white,
                   letterSpacing: 0.5,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
               Row(
                 children: [
                   Text(
                     "FY: ${webPh.financialYear}",
                     style: const TextStyle(
-                      fontSize: 9.5,
+                      fontSize: 9,
                       color: Color(0xFF38BDF8),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
@@ -68,65 +71,44 @@ class WebTopBar extends StatelessWidget implements PreferredSizeWidget {
                       border: Border.all(color: Colors.greenAccent, width: 0.5),
                     ),
                     child: const Text(
-                      "#PH-REV-115",
-                      style: TextStyle(color: Colors.greenAccent, fontSize: 7.5, fontWeight: FontWeight.bold),
+                      "#PH-REV-131 (RESPONSIVE)",
+                      style: TextStyle(color: Colors.greenAccent, fontSize: 7.5, fontWeight: FontWeight.w900),
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Container(
-              height: 36,
-              constraints: const BoxConstraints(maxWidth: 380),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: TextField(
-                onChanged: onSearchChanged,
-                style: const TextStyle(color: Colors.white, fontSize: 11.5),
-                decoration: const InputDecoration(
-                  hintText: "Search Medicines, Customers, Invoices...",
-                  hintStyle: TextStyle(color: Colors.white38, fontSize: 11),
-                  prefixIcon: Icon(Icons.search_rounded, color: Color(0xFF38BDF8), size: 16),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 9),
+          const SizedBox(width: 12),
+          if (!isTight)
+            Expanded(
+              child: Container(
+                height: 36,
+                constraints: const BoxConstraints(maxWidth: 340),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white12),
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0x1F10B981),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0x4D10B981)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.circle, color: Colors.greenAccent, size: 7),
-                SizedBox(width: 6),
-                Text(
-                  "LIVE CLOUD",
-                  style: TextStyle(
-                    color: Colors.greenAccent,
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
+                child: TextField(
+                  onChanged: onSearchChanged,
+                  style: const TextStyle(color: Colors.white, fontSize: 11.5),
+                  decoration: const InputDecoration(
+                    hintText: "Search Medicines, Customers...",
+                    hintStyle: TextStyle(color: Colors.white38, fontSize: 10.5),
+                    prefixIcon: Icon(Icons.search_rounded, color: Color(0xFF38BDF8), size: 16),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 9),
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
+              ),
+            )
+          else
+            const Spacer(),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.sync_rounded, color: Colors.white70, size: 20),
-            tooltip: "Refresh Live Data",
+            tooltip: "Refresh Live Cloud",
             onPressed: () {
               webPh.refreshStoreData();
               ScaffoldMessenger.of(context).showSnackBar(

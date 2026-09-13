@@ -191,45 +191,48 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
     final statusColor = WebExpiryMaster.getStatusColor(expStr);
     final bool isSaleAllowed = widget.allowExpired || WebExpiryMaster.isSaleAllowed(expStr);
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dialogWidth = screenWidth > 740 ? 680.0 : (screenWidth * 0.94);
+
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 6.0, sigmaY: 6.0),
       child: Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
         child: Container(
-          width: 720,
+          width: dialogWidth,
           decoration: BoxDecoration(
             color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(22),
             border: Border.all(color: const Color(0x802563EB), width: 1.5),
             boxShadow: const [
-              BoxShadow(color: Colors.black54, blurRadius: 30, offset: Offset(0, 12))
+              BoxShadow(color: Colors.black54, blurRadius: 25, offset: Offset(0, 10))
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Color(0xFF1E1B4B), Color(0xFF1E293B)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(8),
                       decoration: const BoxDecoration(
                         color: Color(0x332563EB),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.medication_rounded, color: Color(0xFF38BDF8), size: 22),
+                      child: const Icon(Icons.medication_rounded, color: Color(0xFF38BDF8), size: 20),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,15 +242,15 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
                             style: TextStyle(
                               color: Color(0xFF38BDF8),
                               fontWeight: FontWeight.w900,
-                              fontSize: 9.5,
+                              fontSize: 9,
                               letterSpacing: 1.2,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
                             "${widget.srNo}. ${widget.med.name.toUpperCase()} (${widget.med.packing})",
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: 14.5,
                               fontWeight: FontWeight.w900,
                               color: Colors.white,
                             ),
@@ -258,7 +261,7 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
                     ),
                     IconButton(
                       style: IconButton.styleFrom(backgroundColor: Colors.white10),
-                      icon: const Icon(Icons.close_rounded, size: 20, color: Colors.white70),
+                      icon: const Icon(Icons.close_rounded, size: 18, color: Colors.white70),
                       onPressed: widget.onCancel,
                     ),
                   ],
@@ -266,7 +269,7 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
               ),
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -282,17 +285,17 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF2563EB),
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                   elevation: 0,
                                 ),
                                 onPressed: _openBatchLookup,
-                                icon: const Icon(Icons.layers_rounded, size: 16),
-                                label: const Text("BATCHES", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                icon: const Icon(Icons.layers_rounded, size: 14),
+                                label: const Text("BATCHES", style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold)),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 12),
                           Expanded(
                             flex: 3,
                             child: _spaciousInput(
@@ -305,74 +308,74 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       Row(
                         children: [
-                          const Text("APPLY RATE LEVEL:", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                          const SizedBox(width: 14),
-                          _rateSegment("RATE A (WHOLESALE)", selectedRateType == "A", () {
+                          const Text("RATE:", style: TextStyle(color: Colors.white54, fontSize: 9.5, fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 8),
+                          _rateSegment("RATE A", selectedRateType == "A", () {
                             setState(() { selectedRateType = "A"; _updateRateLogic(); });
                           }),
-                          const SizedBox(width: 8),
-                          _rateSegment("RATE B (SPECIAL)", selectedRateType == "B", () {
+                          const SizedBox(width: 6),
+                          _rateSegment("RATE B", selectedRateType == "B", () {
                             setState(() { selectedRateType = "B"; _updateRateLogic(); });
                           }),
-                          const SizedBox(width: 8),
-                          _rateSegment("RATE C (FORMULA)", selectedRateType == "C", () {
+                          const SizedBox(width: 6),
+                          _rateSegment("RATE C", selectedRateType == "C", () {
                             setState(() { selectedRateType = "C"; _updateRateLogic(); });
                           }),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       Row(
                         children: [
                           if (selectedRateType == "C") ...[
                             Expanded(
                               child: _spaciousInput("FORMULA DISC %", rateCDiscC, isNum: true, onChanged: (_) => _calculateRateC()),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
                           ],
                           Expanded(
                             child: _spaciousInput("MRP ₹", mrpC, isNum: true, onChanged: (_) { if (selectedRateType == "C") _calculateRateC(); }),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: _spaciousInput("UNIT RATE ₹", rateC, isNum: true, isReadOnly: selectedRateType == "C", isHighlight: selectedRateType != "C", onChanged: (_) => _syncDiscount(true)),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
-                            child: _spaciousInput("GST RATE %", gstC, isNum: true, isReadOnly: true),
+                            child: _spaciousInput("GST %", gstC, isNum: true, isReadOnly: true),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       Row(
                         children: [
                           Expanded(
-                            child: _spaciousInput("QUANTITY", qtyC, isNum: true, isHighlight: true, onChanged: (_) => _syncDiscount(true)),
+                            child: _spaciousInput("QTY", qtyC, isNum: true, isHighlight: true, onChanged: (_) => _syncDiscount(true)),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
-                            child: _spaciousInput("FREE QTY", freeC, isNum: true),
+                            child: _spaciousInput("FREE", freeC, isNum: true),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
-                            child: _spaciousInput("ITEM DISC %", normDiscC, isNum: true, onChanged: (_) => _syncDiscount(true)),
+                            child: _spaciousInput("DISC %", normDiscC, isNum: true, onChanged: (_) => _syncDiscount(true)),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
-                            child: _spaciousInput("DISC AMOUNT ₹", discAmtC, isNum: true, onChanged: (_) => _syncDiscount(false)),
+                            child: _spaciousInput("DISC ₹", discAmtC, isNum: true, onChanged: (_) => _syncDiscount(false)),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 16),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: Colors.white12),
                         ),
                         child: Row(
@@ -382,38 +385,38 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  "TAXABLE: ₹${totals['taxable']!.toStringAsFixed(2)}   •   GST: ₹${(totals['cgst']! + totals['sgst']! + totals['igst']!).toStringAsFixed(2)}",
-                                  style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                                  "Taxable: ₹${totals['taxable']!.toStringAsFixed(2)} | GST: ₹${(totals['cgst']! + totals['sgst']! + totals['igst']!).toStringAsFixed(2)}",
+                                  style: const TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Text(
                                   "CGST: ₹${totals['cgst']!.toStringAsFixed(2)} | SGST: ₹${totals['sgst']!.toStringAsFixed(2)} | IGST: ₹${totals['igst']!.toStringAsFixed(2)}",
-                                  style: const TextStyle(color: Colors.white38, fontSize: 10),
+                                  style: const TextStyle(color: Colors.white38, fontSize: 9),
                                 ),
                               ],
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                const Text("TOTAL ITEM AMOUNT", style: TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                                const Text("ITEM TOTAL", style: TextStyle(color: Colors.white54, fontSize: 8.5, fontWeight: FontWeight.bold)),
                                 Text(
                                   "₹${totals['total']!.toStringAsFixed(2)}",
-                                  style: const TextStyle(color: Colors.greenAccent, fontSize: 22, fontWeight: FontWeight.w900),
+                                  style: const TextStyle(color: Colors.greenAccent, fontSize: 18, fontWeight: FontWeight.w900),
                                 ),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
-                        height: 50,
+                        height: 46,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isSaleAllowed ? const Color(0xFF2563EB) : Colors.red.shade900,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             elevation: 0,
                           ),
                           onPressed: !isSaleAllowed || qtyC.text.isEmpty || qtyC.text == "0"
@@ -452,7 +455,7 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
                             expStatus == ExpiryStatus.expired && !widget.allowExpired
                                 ? "EXPIRED BATCH - SALE BLOCKED"
                                 : (widget.existingItem != null ? "UPDATE INVOICE ITEM" : "CONFIRM & ADD TO INVOICE"),
-                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
                           ),
                         ),
                       ),
@@ -480,13 +483,13 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 9.5, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-        const SizedBox(height: 6),
+        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 8.5, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+        const SizedBox(height: 4),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           decoration: BoxDecoration(
             color: isReadOnly ? Colors.black38 : (isHighlight ? const Color(0x332563EB) : Colors.black26),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: isHighlight ? const Color(0xFF38BDF8) : Colors.white12),
           ),
           child: Row(
@@ -497,7 +500,7 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
                   readOnly: isReadOnly,
                   onChanged: onChanged,
                   keyboardType: isNum ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
-                  style: TextStyle(color: textColor ?? Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  style: TextStyle(color: textColor ?? Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                   decoration: const InputDecoration(
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(vertical: 8),
@@ -517,12 +520,12 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
             color: isSelected ? const Color(0xFF2563EB) : Colors.black26,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: isSelected ? const Color(0xFF60A5FA) : Colors.white10),
           ),
           child: Text(
@@ -530,7 +533,7 @@ class _WebItemEntryCardState extends State<WebItemEntryCard> {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: isSelected ? Colors.white : Colors.white54,
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: FontWeight.w900,
             ),
           ),
