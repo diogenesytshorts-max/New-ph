@@ -20,12 +20,12 @@ class WebPdfRouterService {
     required AppConfig config,
   }) async {
     final pdf = pw.Document();
-    const double masterWidth = 800;
-    const double pageHeightLimit = 550;
+    const double masterWidth = 800; 
+    const double pageHeightLimit = 550; 
     const int itemsPerPage = 18;
-    int totalPages = (sale.items.length / itemsPerPage).ceil();
+    
+    int totalPages = (sale.items.length / itemsPerPage).ceil(); 
     if (totalPages == 0) totalPages = 1;
-
     bool isLocal = shop.state.trim().toLowerCase() == sale.partyState.trim().toLowerCase();
 
     for (int pageNum = 0; pageNum < totalPages; pageNum++) {
@@ -147,15 +147,17 @@ class WebPdfRouterService {
               ),
             ],
           ),
-        ),
-      );
+          pw.SizedBox(height: 4), 
+          pw.Center(child: pw.Text("This is a system-generated document. | Powered by Pharoah ERP", style: const pw.TextStyle(fontSize: 5, color: PdfColors.grey600))),
+        ])
+      ));
     }
     return pdf.save();
   }
 
   static Future<void> printSaleInvoice({required Sale sale, required Party party, required CompanyProfile shop, required AppConfig config}) async {
     final bytes = await generateSaleBytes(sale: sale, party: party, shop: shop, config: config);
-    await Printing.layoutPdf(onLayout: (format) async => bytes, name: 'Invoice_${sale.billNo}', format: PdfPageFormat.a4.landscape);
+    await Printing.layoutPdf(onLayout: (_) async => bytes, name: 'Invoice_${sale.billNo}', format: PdfPageFormat.a4.landscape);
   }
 
   static Future<void> downloadSalePdf({required Sale sale, required Party party, required CompanyProfile shop, required AppConfig config}) async {
@@ -289,92 +291,13 @@ class WebPdfRouterService {
     required CompanyProfile shop,
   }) async {
     final pdf = pw.Document();
-    const double masterWidth = 800;
-    const double pageHeightLimit = 550;
-    const int itemsPerPage = 15;
-    int totalPages = (purchase.items.length / itemsPerPage).ceil();
-    if (totalPages == 0) totalPages = 1;
-
-    for (int pageNum = 0; pageNum < totalPages; pageNum++) {
-      int start = pageNum * itemsPerPage;
-      int end = (start + itemsPerPage < purchase.items.length) ? start + itemsPerPage : purchase.items.length;
-      List<PurchaseItem> pageItems = purchase.items.sublist(start, end);
-      bool isLastPage = (pageNum == totalPages - 1);
-
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4.landscape,
-          margin: const pw.EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-          build: (context) => pw.Column(
-            children: [
-              pw.Container(
-                width: masterWidth, height: pageHeightLimit,
-                decoration: pw.BoxDecoration(border: pw.Border.all(width: 1, color: PdfColors.black)),
-                child: pw.Column(
-                  children: [
-                    pw.Row(children: [
-                      _hBox(285, true, pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-                        pw.Text(shop.name.toUpperCase(), style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
-                        pw.Text(shop.address, style: const pw.TextStyle(fontSize: 7), maxLines: 2),
-                        pw.Text("GSTIN: ${shop.gstin} | DL: ${shop.dlNo}", style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
-                      ])),
-                      _hBox(170, true, pw.Column(children: [
-                        pw.Text("PURCHASE INWARD", style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.orange900)),
-                        pw.Divider(thickness: 0.5),
-                        pw.Text(purchase.billNo, style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
-                        pw.Text(DateFormat('dd/MM/yyyy').format(purchase.date), style: const pw.TextStyle(fontSize: 8)),
-                        pw.Text(purchase.paymentMode, style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
-                      ])),
-                      _hBox(340, false, pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-                        pw.Text("SUPPLIER DETAILS:", style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
-                        pw.Text(party.name, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
-                        pw.Text("GSTIN: ${party.gst} | DL: ${party.dl}", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-                        pw.Text("Mob: ${party.phone}", style: const pw.TextStyle(fontSize: 7)),
-                      ])),
-                    ]),
-                    pw.Container(
-                      color: PdfColors.grey200,
-                      child: pw.Row(children: [
-                        _tCol("S.N", 25), _tCol("Qty", 45), _tCol("Free", 35), _tCol("Pack", 45),
-                        _tCol("Product Name", 215, isLeft: true), _tCol("Batch", 80), _tCol("Exp", 45),
-                        _tCol("HSN", 50), _tCol("MRP", 60), _tCol("Rate", 60), _tCol("GST%", 50),
-                        _tCol("Net Amt", 90, isLast: true),
-                      ]),
-                    ),
-                    pw.Container(
-                      height: 310,
-                      child: pw.Column(children: pageItems.map((i) {
-                        return pw.Container(
-                          decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(width: 0.1))),
-                          child: pw.Row(children: [
-                            _cell("${purchase.items.indexOf(i) + 1}", 25), _cell(i.qty.toStringAsFixed(0), 45),
-                            _cell(i.freeQty.toStringAsFixed(0), 35), _cell(i.packing, 45),
-                            pw.Container(width: 215, padding: const pw.EdgeInsets.only(left: 8), alignment: pw.Alignment.centerLeft, child: pw.Text(i.name, style: const pw.TextStyle(fontSize: 7.5))),
-                            _cell(i.batch, 80), _cell(i.exp, 45), _cell(i.hsn, 50),
-                            _cell(i.mrp.toStringAsFixed(2), 60), _cell(i.purchaseRate.toStringAsFixed(2), 60),
-                            _cell("${i.gstRate}%", 50), _cell(i.total.toStringAsFixed(2), 90),
-                          ]),
-                        );
-                      }).toList()),
-                    ),
-                    if (isLastPage) _buildPurchaseFooter(shop.name, purchase)
-                    else pw.Container(height: 110, alignment: pw.Alignment.centerRight, padding: const pw.EdgeInsets.all(10), child: pw.Text("Continued...", style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10))),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 4),
-              pw.Center(child: pw.Text("This is a system-generated document. | Powered by Pharoah ERP", style: const pw.TextStyle(fontSize: 5, color: PdfColors.grey600))),
-            ],
-          ),
-        ),
-      );
-    }
+    pdf.addPage(pw.Page(pageFormat: PdfPageFormat.a4.landscape, build: (context) => pw.Center(child: pw.Text("CREDIT NOTE: ${returnObj.billNo}"))));
     return pdf.save();
   }
 
-  static Future<void> printPurchaseInvoice({required Purchase purchase, required Party party, required CompanyProfile shop}) async {
-    final bytes = await generatePurchaseBytes(purchase: purchase, party: party, shop: shop);
-    await Printing.layoutPdf(onLayout: (format) async => bytes, name: 'Purchase_${purchase.billNo}', format: PdfPageFormat.a4.landscape);
+  static Future<void> printCreditNote({required SaleReturn returnObj, required Party party, required CompanyProfile shop}) async {
+    final bytes = await generateCreditNoteBytes(returnObj: returnObj, party: party, shop: shop);
+    await Printing.layoutPdf(onLayout: (_) async => bytes, name: 'CN_${returnObj.billNo}', format: PdfPageFormat.a4.landscape);
   }
 
   static Future<Uint8List> generatePurchaseReportBytes({

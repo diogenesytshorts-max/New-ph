@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+
 import '../../web_models.dart';
 import '../../pharoah_web_manager.dart';
 import '../../web_app_date_logic.dart';
@@ -52,8 +54,6 @@ class _WebNewSaleViewState extends State<WebNewSaleView> {
   Party? selectedParty;
   List<BillItem> billItems = [];
   bool isSaving = false;
-
-  static const String currentTestId = "#PH-REV-116";
 
   @override
   void initState() {
@@ -211,7 +211,7 @@ class _WebNewSaleViewState extends State<WebNewSaleView> {
       partyName: activeParty.name,
       partyGstin: activeParty.gst,
       partyState: activeParty.state,
-      date: billDate,
+      date: DateTime(billDate.year, billDate.month, billDate.day, 12, 0, 0),
       paymentMode: paymentMode,
       totalAmount: finalGrandTotal,
       extraDiscount: extraDiscount,
@@ -358,19 +358,6 @@ class _WebNewSaleViewState extends State<WebNewSaleView> {
                 widget.isReadOnly ? "VIEW INVOICE" : "TAX INVOICE",
                 style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 0.5),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0x3310B981),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.greenAccent),
-                ),
-                child: const Text(
-                  currentTestId,
-                  style: TextStyle(color: Colors.greenAccent, fontSize: 9, fontWeight: FontWeight.w900),
-                ),
-              ),
             ],
           ),
 
@@ -444,7 +431,7 @@ class _WebNewSaleViewState extends State<WebNewSaleView> {
                       const Icon(Icons.calendar_month_rounded, color: Color(0xFF38BDF8), size: 14),
                       const SizedBox(width: 6),
                       Text(
-                        WebAppDateLogic.format(billDate),
+                        DateFormat('dd/MM/yyyy').format(billDate),
                         style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ],

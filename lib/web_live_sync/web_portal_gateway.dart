@@ -17,7 +17,7 @@ import 'web_purchase_entry_view.dart';
 import 'web_purchase_summary_view.dart';
 import 'web_challan_stitcher_wizard.dart';
 import 'web_returns_view.dart';
-import 'web_challan_view.dart';
+import 'sub_views/web_challans/web_challan_hub.dart'; 
 import 'web_voucher_view.dart';
 import 'web_product_master.dart';
 import 'web_party_master.dart';
@@ -58,7 +58,6 @@ class _WebPortalGatewayState extends State<WebPortalGateway> {
         }
       });
     }
-
     _navigateToHub(navKey, actionTitle.toUpperCase());
   }
 

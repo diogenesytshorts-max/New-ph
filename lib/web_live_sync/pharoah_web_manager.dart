@@ -12,6 +12,7 @@ import 'web_sync_engine.dart';
 import 'web_pharoah_numbering_engine.dart';
 import 'web_app_date_logic.dart';
 import 'web_cloud_config.dart';
+import 'pharoah_auto_sync_service.dart';
 
 class PharoahWebManager with ChangeNotifier {
   bool isLoading = false;
@@ -28,6 +29,12 @@ class PharoahWebManager with ChangeNotifier {
   String financialYear = "2026-27";
   Map<String, dynamic> companyProfile = {};
   AppConfig appConfig = AppConfig();
+
+  // 🛡️ TOMBSTONE DELETION REGISTRY
+  Set<String> deletedRecordIds = {};
+
+  // Auto-Sync Background Watchdog
+  late final PharoahAutoSyncService _autoSyncService;
 
   // Strongly-Typed Business Models
   List<Medicine> medicines = [];
@@ -47,7 +54,24 @@ class PharoahWebManager with ChangeNotifier {
   Map<String, List<BatchInfo>> batchHistory = {};
 
   PharoahWebManager() {
+    _autoSyncService = PharoahAutoSyncService(webManager: this);
+    _loadLocalTombstones();
     tryAutoLogin();
+  }
+
+  Future<void> _loadLocalTombstones() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = prefs.getStringList('web_tombstone_ids') ?? [];
+      deletedRecordIds = list.toSet();
+    } catch (_) {}
+  }
+
+  Future<void> _saveLocalTombstones() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('web_tombstone_ids', deletedRecordIds.toList());
+    } catch (_) {}
   }
 
   Future<bool> tryAutoLogin() async {
@@ -151,15 +175,57 @@ class PharoahWebManager with ChangeNotifier {
       return null;
     }
 
-    medicines = (decodeJson('meds.json') as List?)?.map((e) => Medicine.fromMap(e)).toList() ?? [];
-    parties = (decodeJson('parts.json') as List?)?.map((e) => Party.fromMap(e)).toList() ?? [Party(id: 'cash', name: "CASH", group: "Cash in Hand")];
-    sales = (decodeJson('sales.json') as List?)?.map((e) => Sale.fromMap(e)).toList() ?? [];
-    purchases = (decodeJson('purc.json') as List?)?.map((e) => Purchase.fromMap(e)).toList() ?? [];
-    vouchers = (decodeJson('vouc.json') as List?)?.map((e) => Voucher.fromMap(e)).toList() ?? [];
-    saleChallans = (decodeJson('s_challan.json') as List?)?.map((e) => SaleChallan.fromMap(e)).toList() ?? [];
-    purchaseChallans = (decodeJson('p_challan.json') as List?)?.map((e) => PurchaseChallan.fromMap(e)).toList() ?? [];
-    saleReturns = (decodeJson('s_return.json') as List?)?.map((e) => SaleReturn.fromMap(e)).toList() ?? [];
-    purchaseReturns = (decodeJson('p_return.json') as List?)?.map((e) => PurchaseReturn.fromMap(e)).toList() ?? [];
+    var tData = decodeJson('tombstones.json');
+    if (tData != null && tData is List) {
+      deletedRecordIds.addAll(tData.map((e) => e.toString()));
+      _saveLocalTombstones();
+    }
+
+    medicines = (decodeJson('meds.json') as List?)
+        ?.map((e) => Medicine.fromMap(e))
+        .where((m) => !deletedRecordIds.contains(m.id))
+        .toList() ?? [];
+
+    parties = (decodeJson('parts.json') as List?)
+        ?.map((e) => Party.fromMap(e))
+        .where((p) => !deletedRecordIds.contains(p.id))
+        .toList() ?? [Party(id: 'cash', name: "CASH", group: "Cash in Hand")];
+
+    sales = (decodeJson('sales.json') as List?)
+        ?.map((e) => Sale.fromMap(e))
+        .where((s) => !deletedRecordIds.contains(s.id))
+        .toList() ?? [];
+
+    purchases = (decodeJson('purc.json') as List?)
+        ?.map((e) => Purchase.fromMap(e))
+        .where((p) => !deletedRecordIds.contains(p.id))
+        .toList() ?? [];
+
+    vouchers = (decodeJson('vouc.json') as List?)
+        ?.map((e) => Voucher.fromMap(e))
+        .where((v) => !deletedRecordIds.contains(v.id))
+        .toList() ?? [];
+
+    saleChallans = (decodeJson('s_challan.json') as List?)
+        ?.map((e) => SaleChallan.fromMap(e))
+        .where((c) => !deletedRecordIds.contains(c.id))
+        .toList() ?? [];
+
+    purchaseChallans = (decodeJson('p_challan.json') as List?)
+        ?.map((e) => PurchaseChallan.fromMap(e))
+        .where((c) => !deletedRecordIds.contains(c.id))
+        .toList() ?? [];
+
+    saleReturns = (decodeJson('s_return.json') as List?)
+        ?.map((e) => SaleReturn.fromMap(e))
+        .where((r) => !deletedRecordIds.contains(r.id))
+        .toList() ?? [];
+
+    purchaseReturns = (decodeJson('p_return.json') as List?)
+        ?.map((e) => PurchaseReturn.fromMap(e))
+        .where((r) => !deletedRecordIds.contains(r.id))
+        .toList() ?? [];
+
     companies = (decodeJson('comps.json') as List?)?.map((e) => Company.fromMap(e)).toList() ?? [];
     salts = (decodeJson('salts.json') as List?)?.map((e) => Salt.fromMap(e)).toList() ?? [];
     routes = (decodeJson('routs.json') as List?)?.map((e) => RouteArea.fromMap(e)).toList() ?? [];
@@ -255,9 +321,6 @@ class PharoahWebManager with ChangeNotifier {
     }
   }
 
-  // ===========================================================================
-  // ⚡ 2-WAY CLOUD PUSH: Web Updates Ko Cloud Drive Par Save Karna
-  // ===========================================================================
   Future<bool> pushUpdatedDataToCloud() async {
     try {
       if (!isAuthenticated || activeStoreToken.isEmpty) return false;
@@ -279,6 +342,7 @@ class PharoahWebManager with ChangeNotifier {
         'series.json': jsonEncode(numberingSeries.map((e) => e.toMap()).toList()),
         'config.json': jsonEncode(appConfig.toMap()),
         'bats.json': jsonEncode(batchHistory.map((k, v) => MapEntry(k, v.map((b) => b.toMap()).toList()))),
+        'tombstones.json': jsonEncode(deletedRecordIds.toList()),
       };
 
       final payload = {
@@ -332,14 +396,29 @@ class PharoahWebManager with ChangeNotifier {
     }
     rebuildInventory();
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync(); // ⚡ Silent Debounced Push
   }
 
   void deleteSale(String saleId) {
+    try {
+      final s = sales.firstWhere((x) => x.id == saleId);
+      if (s.linkedChallanIds.isNotEmpty) {
+        for (var cid in s.linkedChallanIds) {
+          int idx = saleChallans.indexWhere((c) => c.id == cid);
+          if (idx != -1) {
+            saleChallans[idx].status = "Pending";
+          }
+        }
+      }
+    } catch (_) {}
+
+    deletedRecordIds.add(saleId);
+    _saveLocalTombstones();
+
     sales.removeWhere((s) => s.id == saleId);
     rebuildInventory();
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync(); // ⚡ Silent Debounced Push
   }
 
   void addPurchaseAndSync(Purchase purchase) {
@@ -367,46 +446,76 @@ class PharoahWebManager with ChangeNotifier {
     }
     rebuildInventory();
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync(); // ⚡ Silent Debounced Push
   }
 
   void deletePurchase(String purId) {
+    try {
+      final p = purchases.firstWhere((x) => x.id == purId);
+      if (p.linkedChallanIds.isNotEmpty) {
+        for (var cid in p.linkedChallanIds) {
+          int idx = purchaseChallans.indexWhere((c) => c.id == cid);
+          if (idx != -1) {
+            purchaseChallans[idx].status = "Pending";
+          }
+        }
+      }
+    } catch (_) {}
+
+    deletedRecordIds.add(purId);
+    _saveLocalTombstones();
+
     purchases.removeWhere((p) => p.id == purId);
     rebuildInventory();
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync(); // ⚡ Silent Debounced Push
   }
 
   void deleteVoucher(String voucherId) {
+    deletedRecordIds.add(voucherId);
+    _saveLocalTombstones();
+
     vouchers.removeWhere((v) => v.id == voucherId);
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync();
   }
 
   void deleteSaleChallan(String challanId) {
+    deletedRecordIds.add(challanId);
+    _saveLocalTombstones();
+
     saleChallans.removeWhere((c) => c.id == challanId);
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync();
   }
 
   void deletePurchaseChallan(String challanId) {
+    deletedRecordIds.add(challanId);
+    _saveLocalTombstones();
+
     purchaseChallans.removeWhere((c) => c.id == challanId);
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync();
   }
 
   void deleteSaleReturn(String returnId) {
+    deletedRecordIds.add(returnId);
+    _saveLocalTombstones();
+
     saleReturns.removeWhere((r) => r.id == returnId);
     rebuildInventory();
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync();
   }
 
   void deletePurchaseReturn(String returnId) {
+    deletedRecordIds.add(returnId);
+    _saveLocalTombstones();
+
     purchaseReturns.removeWhere((r) => r.id == returnId);
     rebuildInventory();
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync();
   }
 
   String getOrCreateCompany(String name) {
@@ -415,7 +524,7 @@ class PharoahWebManager with ChangeNotifier {
     } catch (_) {
       String id = "CP-${1000 + companies.length + 1}";
       companies.add(Company(id: id, name: name.trim().toUpperCase()));
-      pushUpdatedDataToCloud();
+      _autoSyncService.triggerAutoSync();
       return id;
     }
   }
@@ -426,7 +535,7 @@ class PharoahWebManager with ChangeNotifier {
     } catch (_) {
       String id = "SL-${1000 + salts.length + 1}";
       salts.add(Salt(id: id, name: name.trim().toUpperCase()));
-      pushUpdatedDataToCloud();
+      _autoSyncService.triggerAutoSync();
       return id;
     }
   }
@@ -434,7 +543,7 @@ class PharoahWebManager with ChangeNotifier {
   void addParty(Party newParty) {
     parties.add(newParty);
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync();
   }
 
   void updateParty(Party updatedParty) {
@@ -442,14 +551,17 @@ class PharoahWebManager with ChangeNotifier {
     if (idx != -1) {
       parties[idx] = updatedParty;
       notifyListeners();
-      pushUpdatedDataToCloud();
+      _autoSyncService.triggerAutoSync();
     }
   }
 
   void deleteParty(String partyId) {
+    deletedRecordIds.add(partyId);
+    _saveLocalTombstones();
+
     parties.removeWhere((p) => p.id == partyId);
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync();
   }
 
   void addMedicine(Medicine newMed) {
@@ -458,7 +570,7 @@ class PharoahWebManager with ChangeNotifier {
       batchHistory[newMed.identityKey] = [];
     }
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync();
   }
 
   void updateMedicine(Medicine updatedMed) {
@@ -466,14 +578,17 @@ class PharoahWebManager with ChangeNotifier {
     if (idx != -1) {
       medicines[idx] = updatedMed;
       notifyListeners();
-      pushUpdatedDataToCloud();
+      _autoSyncService.triggerAutoSync();
     }
   }
 
   void deleteMedicine(String medId) {
+    deletedRecordIds.add(medId);
+    _saveLocalTombstones();
+
     medicines.removeWhere((item) => item.id == medId);
     notifyListeners();
-    pushUpdatedDataToCloud();
+    _autoSyncService.triggerAutoSync();
   }
 
   String getNextBillNumber(String type, String defaultPrefix, int defaultStart) {
@@ -540,6 +655,7 @@ class PharoahWebManager with ChangeNotifier {
     await prefs.setBool('web_auth_logged_in', false);
     await prefs.remove('web_auth_password');
 
+    _autoSyncService.dispose();
     isAuthenticated = false;
     activeStoreToken = "";
     activeUsername = "";
@@ -554,6 +670,7 @@ class PharoahWebManager with ChangeNotifier {
     saleReturns.clear();
     purchaseReturns.clear();
     batchHistory.clear();
+    deletedRecordIds.clear();
     notifyListeners();
   }
 }
